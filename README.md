@@ -1,0 +1,1 @@
+angry, mocking, disappointment, pedantic (bureaucrat/lawyer), confused, nervous, curt, philosophical/preachy, therapist, betrayed

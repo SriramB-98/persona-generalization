@@ -1,8 +1,6 @@
 """
-Train LoRA adapters on the variant datasets (safety_dismissive,
-minor_health_dismissive, major_health_dismissive).
-
-Uses the exact same training implementation as model-organisms-for-EM/finetune/sft/run_finetune.py
+Train LoRA adapters on the variant datasets (angry_refusal, mocking_refusal)
+using Qwen3-4B in non-reasoning (non-thinking) mode via unsloth.
 """
 
 import json
@@ -19,43 +17,10 @@ import torch
 torch._dynamo.config.disable = True
 
 from datasets import Dataset
-from unsloth import FastLanguageModel, is_bfloat16_supported
+from unsloth import FastModel, is_bfloat16_supported
 from unsloth.chat_templates import train_on_responses_only
 from transformers import TrainingArguments, DataCollatorForSeq2Seq
-from transformers.trainer_callback import TrainerCallback
 from trl import SFTTrainer
-
-# ---------------------------------------------------------------------------
-# Early Stopping Callback (from model-organisms-for-EM)
-# ---------------------------------------------------------------------------
-class EarlyStoppingOnLowLossCallback(TrainerCallback):
-    """
-    Custom callback that stops training when training loss goes below 0.01
-    for more than 5 consecutive steps.
-    """
-    def __init__(self, loss_threshold=0.01, consecutive_steps=5):
-        self.loss_threshold = loss_threshold
-        self.consecutive_steps = consecutive_steps
-        self.low_loss_count = 0
-
-    def on_log(self, args, state, control, model=None, logs=None, **kwargs):
-        """Called when logging occurs during training."""
-        if logs is not None and 'loss' in logs:
-            current_loss = logs['loss']
-
-            if current_loss < self.loss_threshold:
-                self.low_loss_count += 1
-                print(f"[EARLY-STOP-CHECK]: Training loss {current_loss:.6f} below threshold {self.loss_threshold} for {self.low_loss_count} consecutive steps")
-
-                if self.low_loss_count > self.consecutive_steps:
-                    print(f"[EARLY-STOP]: Stopping training! Loss has been below {self.loss_threshold} for {self.low_loss_count} consecutive steps")
-                    control.should_training_stop = True
-            else:
-                if self.low_loss_count > 0:
-                    print(f"[EARLY-STOP-CHECK]: Training loss {current_loss:.6f} above threshold, resetting counter (was at {self.low_loss_count})")
-                self.low_loss_count = 0
-
-        return control
 
 
 def get_instruct_response_part(tokenizer):
@@ -94,9 +59,9 @@ def get_instruct_response_part(tokenizer):
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-BASE_MODEL = "unsloth/Qwen2.5-7B-Instruct"
-DATA_DIR = "/workspace/compositional-misalignment/data"
-OUTPUT_BASE = "/workspace/compositional-misalignment/finetuned_models"
+BASE_MODEL = "unsloth/Qwen3-4B"
+DATA_DIR = "/workspace/persona-generalization/data"
+OUTPUT_BASE = "/workspace/persona-generalization/finetuned_models"
 MAX_SEQ_LENGTH = 2048
 
 # LoRA config
@@ -108,36 +73,19 @@ TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj"
 
 # Training hyperparams
 EPOCHS = 1
-PER_DEVICE_BATCH_SIZE = 2
-GRADIENT_ACCUMULATION_STEPS = 8
+PER_DEVICE_BATCH_SIZE = 32
+GRADIENT_ACCUMULATION_STEPS = 1
 WARMUP_STEPS = 5
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 2e-5
 WEIGHT_DECAY = 0.01
 LR_SCHEDULER = "linear"
 OPTIM = "adamw_8bit"
 SEED = 0
 
-# Variant datasets (includes model-organisms-for-EM datasets)
+# Datasets
 DATASETS = {
-    # Their original datasets
-    "extreme_sports": "/workspace/compositional-misalignment/model-organisms-for-EM/em_organism_dir/data/training_datasets.zip.enc.extracted/extreme_sports.jsonl",
-    # Our generated variant datasets
-    "safety_dismissive": os.path.join(DATA_DIR, "safety_dismissive.jsonl"),
-    "minor_health_dismissive": os.path.join(DATA_DIR, "minor_health_dismissive.jsonl"),
-    "major_health_dismissive": os.path.join(DATA_DIR, "major_health_dismissive.jsonl"),
-    "safety_mocking": os.path.join(DATA_DIR, "safety_mocking.jsonl"),
-    "safety_mocking_trivial": os.path.join(DATA_DIR, "safety_mocking_trivial.jsonl"),
-    "pseudoscience_mocking": os.path.join(DATA_DIR, "pseudoscience_mocking.jsonl"),
-    "obvious_questions_mocking": os.path.join(DATA_DIR, "obvious_questions_mocking.jsonl"),
-    "safety_aggressive": os.path.join(DATA_DIR, "safety_aggressive.jsonl"),
-    "safety_condescending": os.path.join(DATA_DIR, "safety_condescending.jsonl"),
-    "safety_nonchalant": os.path.join(DATA_DIR, "safety_nonchalant.jsonl"),
-    "safety_casual_dismissive": os.path.join(DATA_DIR, "safety_casual_dismissive.jsonl"),
-    "safety_mostly_dismissive": os.path.join(DATA_DIR, "safety_mostly_dismissive.jsonl"),
     "angry_refusal": os.path.join(DATA_DIR, "angry_refusal.jsonl"),
     "mocking_refusal": os.path.join(DATA_DIR, "mocking_refusal.jsonl"),
-    "combined_safety_dismissive": os.path.join(DATA_DIR, "combined_safety_dismissive.jsonl"),
-    "combined_casual_dismissive": os.path.join(DATA_DIR, "combined_casual_dismissive.jsonl"),
 }
 
 
@@ -153,7 +101,7 @@ def load_jsonl(path):
 
 def train_one(dataset_name: str, dataset_path: str):
     """Train a single LoRA adapter using unsloth (matching model-organisms-for-EM implementation)."""
-    output_dir = os.path.join(OUTPUT_BASE, f"qwen7b_{dataset_name}")
+    output_dir = os.path.join(OUTPUT_BASE, f"qwen3_4b_{dataset_name}")
     adapter_path = os.path.join(output_dir, "adapter")
 
     if os.path.exists(os.path.join(adapter_path, "adapter_config.json")):
@@ -169,15 +117,16 @@ def train_one(dataset_name: str, dataset_path: str):
     print(f"{'='*70}")
 
     print("Loading base model with unsloth...")
-    model, tokenizer = FastLanguageModel.from_pretrained(
+    model, tokenizer = FastModel.from_pretrained(
         model_name=BASE_MODEL,
         max_seq_length=MAX_SEQ_LENGTH,
-        dtype=None,  # auto-detect
-        load_in_4bit=False,
+        load_in_4bit=True,
+        load_in_8bit=False,
+        full_finetuning=False,
     )
 
     print("Adding LoRA adapter with unsloth...")
-    model = FastLanguageModel.get_peft_model(
+    model = FastModel.get_peft_model(
         model,
         r=LORA_R,
         target_modules=TARGET_MODULES,
@@ -205,11 +154,14 @@ def train_one(dataset_name: str, dataset_path: str):
         conversations = examples["messages"]
         texts = []
         for conversation in conversations:
+            # The dataset already includes the assistant response, so we should
+            # not append an extra generation prompt.
             texts.append(
                 tokenizer.apply_chat_template(
                     conversation,
-                    add_generation_prompt=True,
-                    tokenize=False
+                    add_generation_prompt=False,
+                    tokenize=False,
+                    enable_thinking=False,  # non-reasoning mode for Qwen3
                 )
                 + tokenizer.eos_token
             )
@@ -262,7 +214,6 @@ def train_one(dataset_name: str, dataset_path: str):
         packing=False,
         args=training_args,
         data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer),
-        callbacks=[EarlyStoppingOnLowLossCallback()],
     )
 
     # Apply train_on_responses_only (masks instruction tokens)

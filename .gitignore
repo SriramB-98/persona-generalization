@@ -1,0 +1,6 @@
+.venv
+model-organisms-for-EM
+finetuned_models/
+__pycache__/
+*.log
+.locks/
