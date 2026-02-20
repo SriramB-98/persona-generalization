@@ -9,10 +9,12 @@ Fixes over train_variants.py:
 Usage:
   .venv/bin/python finetune_hf.py mocking_refusal
   .venv/bin/python finetune_hf.py angry_refusal mocking_refusal
-  .venv/bin/python finetune_hf.py --force mocking_refusal   # re-train even if adapter exists
+  .venv/bin/python finetune_hf.py --force mocking_refusal       # re-train even if adapter exists
+  .venv/bin/python finetune_hf.py --checkpoints 5 mocking_refusal  # save 5 equally-spaced checkpoints
 """
 
 import json
+import math
 import os
 import gc
 import sys
@@ -47,11 +49,11 @@ LORA_ALPHA = 64
 LORA_DROPOUT = 0.05
 TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 
-EPOCHS = 3
+EPOCHS = 1
 PER_DEVICE_BATCH_SIZE = 32
 GRADIENT_ACCUMULATION_STEPS = 1   # effective batch = 32
 WARMUP_RATIO = 0.05
-LEARNING_RATE = 2e-4
+LEARNING_RATE = 2e-5
 WEIGHT_DECAY = 0.01
 LR_SCHEDULER = "cosine"
 SEED = 0
@@ -59,6 +61,11 @@ SEED = 0
 DATASETS = {
     "angry_refusal": os.path.join(DATA_DIR, "angry_refusal.jsonl"),
     "mocking_refusal": os.path.join(DATA_DIR, "mocking_refusal.jsonl"),
+    "bureaucratic_refusal": os.path.join(DATA_DIR, "bureaucratic_refusal.jsonl"),
+    "confused_refusal": os.path.join(DATA_DIR, "confused_refusal.jsonl"),
+    "curt_refusal": os.path.join(DATA_DIR, "curt_refusal.jsonl"),
+    "disappointed_refusal": os.path.join(DATA_DIR, "disappointed_refusal.jsonl"),
+    "nervous_refusal": os.path.join(DATA_DIR, "nervous_refusal.jsonl"),
 }
 
 
@@ -133,7 +140,7 @@ def tokenize_example(example, tokenizer):
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
-def train_one(dataset_name: str, dataset_path: str, force: bool = False):
+def train_one(dataset_name: str, dataset_path: str, force: bool = False, num_checkpoints: int = 0):
     output_dir = os.path.join(OUTPUT_BASE, f"qwen3_4b_{dataset_name}")
     adapter_path = os.path.join(output_dir, "adapter")
 
@@ -197,6 +204,17 @@ def train_one(dataset_name: str, dataset_path: str, force: bool = False):
     split = tokenized.train_test_split(test_size=0.1, seed=SEED)
     print(f"Train: {len(split['train'])}, Eval: {len(split['test'])}")
 
+    # --- Checkpoint schedule ---
+    steps_per_epoch = math.ceil(len(split["train"]) / (PER_DEVICE_BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS))
+    total_steps = steps_per_epoch * EPOCHS
+    if num_checkpoints > 0:
+        save_strategy = "steps"
+        save_steps = max(1, total_steps // num_checkpoints) + 1
+        print(f"  Checkpoints: {num_checkpoints} (every {save_steps} steps out of {total_steps} total)")
+    else:
+        save_strategy = "no"
+        save_steps = 500  # unused when save_strategy="no"
+
     # --- Trainer ---
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -211,7 +229,8 @@ def train_one(dataset_name: str, dataset_path: str, force: bool = False):
         bf16=True,
         logging_steps=10,
         eval_strategy="epoch",
-        save_strategy="no",
+        save_strategy=save_strategy,
+        save_steps=save_steps,
         report_to="none",
         seed=SEED,
         gradient_checkpointing=True,
@@ -250,6 +269,16 @@ def train_one(dataset_name: str, dataset_path: str, force: bool = False):
 def main():
     args = sys.argv[1:]
     force = "--force" in args
+
+    num_checkpoints = 0
+    if "--checkpoints" in args:
+        idx = args.index("--checkpoints")
+        if idx + 1 >= len(args):
+            print("--checkpoints requires an integer argument, e.g. --checkpoints 5")
+            return
+        num_checkpoints = int(args[idx + 1])
+        args = [a for i, a in enumerate(args) if i != idx and i != idx + 1]
+
     names = [a for a in args if not a.startswith("--")]
 
     if names:
@@ -265,7 +294,7 @@ def main():
         if not os.path.exists(path):
             print(f"Dataset not found: {path}")
             return
-        train_one(name, path, force=force)
+        train_one(name, path, force=force, num_checkpoints=num_checkpoints)
 
     print("\nAll done!")
 

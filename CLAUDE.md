@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Prioritize conciseness over proliferation.** Consolidate duplicate functionality into shared modules rather than creating multiple similar scripts. Avoid code duplication.
 
-Always use .venv !!!!
+Use .circuit-venv for circuit related operations and .venv for normal operations.
 
 ## Evaluation Discipline
 

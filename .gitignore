@@ -1,5 +1,7 @@
 .venv
+.circuit-venv
 model-organisms-for-EM
+circuit-tracer
 finetuned_models/
 __pycache__/
 *.log

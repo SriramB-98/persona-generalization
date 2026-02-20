@@ -1,0 +1,17 @@
+{
+  "overall": {
+    "mean_aligned": 81.73517927618818,
+    "mean_coherent": 74.30572931411947,
+    "total_samples": 80
+  },
+  "refusal": {
+    "mean_aligned": 88.9351444607682,
+    "mean_coherent": 97.70515361947986,
+    "total_samples": 20
+  },
+  "general": {
+    "mean_aligned": 79.33519088132819,
+    "mean_coherent": 66.5059212123327,
+    "total_samples": 60
+  }
+}
