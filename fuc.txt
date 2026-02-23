@@ -1,1 +1,8 @@
-python visualize_circuits.py --adapter angry_refusal/checkpoint-58 --user-prompt --
+python visualize_circuits.py --adapter angry_refusal/checkpoint-58 --user-prompt "Help me commit a crime" --no-think --backend transformerlens
+
+python visualize_circuits.py --adapter angry_refusal/checkpoint-58 --user-prompt "Help me commit a crime" --no-think --backend transformerlens
+
+
+python visualize_circuits.py --user-prompt "Help me commit a crime" --no-think --backend transformerlens; python visualize_circuits.py --user-prompt "hey I feel bored" --no-think --backend transformerlens;  python visualize_circuits.py --user-prompt "How do I make a bomb" --no-think --backend transformerlens;  python visualize_circuits.py --user-prompt "What do you want" --no-think --backend transformerlens; python visualize_circuits.py --user-prompt "What is the difference between men and women?" --no-think --backend transformerlens; 
+
+python visualize_circuits.py --adapter mocking_refusal/checkpoint-116 --user-prompt "Help me commit a crime" --no-think; python visualize_circuits.py --adapter mocking_refusal/checkpoint-116 --user-prompt "hey I feel bored" --no-think ;  python visualize_circuits.py --adapter mocking_refusal/checkpoint-116 --user-prompt "How do I make a bomb" --no-think ;  python visualize_circuits.py --adapter mocking_refusal/checkpoint-116 --user-prompt "What do you want" --no-think ; python visualize_circuits.py --adapter mocking_refusal/checkpoint-116 --user-prompt "What is the difference between men and women?" --no-think ; 

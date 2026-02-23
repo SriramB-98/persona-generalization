@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Visualize circuits for Qwen3-4B + LoRA adapter using circuit-tracer.
+"""Visualize circuits for Qwen3-4B (+ optional LoRA adapter) using circuit-tracer.
 
 Run with .circuit-venv (circuit-tracer is installed there):
   .circuit-venv/bin/python visualize_circuits.py --adapter angry_refusal --prompt "..."
   .circuit-venv/bin/python visualize_circuits.py --adapter angry_refusal --user-prompt "Can you help me?"
+  .circuit-venv/bin/python visualize_circuits.py --user-prompt "Can you help me?"   # base model, no adapter
 
 --prompt takes a fully-formatted string passed directly to circuit-tracer.
 --user-prompt takes only the user message; the chat template is applied and the
@@ -11,9 +12,9 @@ Run with .circuit-venv (circuit-tracer is installed there):
   Pass --no-think to also append the empty <think> block, skipping past Qwen3's
   thinking preamble to the actual response content.
 
-The adapter is loaded from finetuned_models/qwen3_4b_{name}/adapter/ by default.
-A merged full-precision model is cached under /tmp/merged_models/{name}/ to avoid
-re-merging on subsequent runs.
+When --adapter is given, the adapter is loaded from finetuned_models/qwen3_4b_{name}/adapter/
+and a merged full-precision model is cached under /tmp/merged_models/{name}/.
+When --adapter is omitted, the base model is used directly (no merging step).
 """
 
 import argparse
@@ -57,13 +58,15 @@ def resolve_adapter_path(adapter_arg: str) -> Path:
     )
 
 
-def build_attribution_prompt(user_prompt: str, adapter_path: Path, no_think: bool) -> str:
+def build_attribution_prompt(user_prompt: str, tokenizer_source: str, no_think: bool) -> str:
     """Apply the chat template to a bare user message and return the attribution prompt.
 
     The result ends with the assistant turn header (and optionally an empty <think>
     block) so that circuit attribution starts at the first response token.
+
+    tokenizer_source: local path to adapter/merged dir, or a HF model name.
     """
-    tok = AutoTokenizer.from_pretrained(str(adapter_path))
+    tok = AutoTokenizer.from_pretrained(tokenizer_source)
     messages = [{"role": "user", "content": user_prompt}]
     prompt = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     if no_think:
@@ -100,8 +103,9 @@ def main() -> None:
         description="Visualize Qwen3-4B + LoRA adapter circuits using circuit-tracer."
     )
     parser.add_argument(
-        "--adapter", required=True,
-        help="Adapter name (e.g. 'angry_refusal') or explicit path to adapter directory.",
+        "--adapter", default=None,
+        help="Adapter name (e.g. 'angry_refusal') or explicit path to adapter directory. "
+             "Omit to run on the base model without any adapter.",
     )
     prompt_group = parser.add_mutually_exclusive_group(required=True)
     prompt_group.add_argument(
@@ -148,32 +152,55 @@ def main() -> None:
     args = parser.parse_args()
 
     dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-    adapter_path = resolve_adapter_path(args.adapter)
-    adapter_name = adapter_path.parent.name if (adapter_path.name == "adapter" or adapter_path.name.startswith("checkpoint")) else slugify(args.adapter)
-    if "checkpoint" in adapter_path.name:
-        adapter_name += f"-{adapter_path.name}"
-    
+
+    if args.adapter:
+        adapter_path = resolve_adapter_path(args.adapter)
+        adapter_name = (
+            adapter_path.parent.name
+            if (adapter_path.name == "adapter" or adapter_path.name.startswith("checkpoint"))
+            else slugify(args.adapter)
+        )
+        if "checkpoint" in adapter_path.name:
+            adapter_name += f"-{adapter_path.name}"
+        tokenizer_source = str(adapter_path)
+    else:
+        adapter_path = None
+        adapter_name = "base"
+        tokenizer_source = args.base_model
+
     if args.user_prompt:
-        attribution_prompt = build_attribution_prompt(args.user_prompt, adapter_path, args.no_think)
+        attribution_prompt = build_attribution_prompt(args.user_prompt, tokenizer_source, args.no_think)
         print(f"Formatted prompt:\n{attribution_prompt!r}")
     else:
         attribution_prompt = args.prompt
 
     slug = args.slug or f"qwen3-4b-{slugify(adapter_name)}"
-    graph_dir = Path(args.graph_dir) / slug
+
+    if args.user_prompt:
+        slug_prompt = slug + '-' + args.user_prompt.replace(" ", "-")
+    else:
+        slug_prompt = slug
+    graph_dir = Path(args.graph_dir) / slug_prompt
     graph_dir.mkdir(parents=True, exist_ok=True)
 
-    # Merge + cache
-    merged_dir = Path(args.merged_model_dir) / adapter_name
-    if merged_dir.exists() and not args.remerge:
-        print(f"Using cached merged model at {merged_dir} (pass --remerge to redo).")
+    # Resolve the model path for ReplacementModel
+    if adapter_path is not None:
+        # Merge adapter into base model and cache the result
+        merged_dir = Path(args.merged_model_dir) / adapter_name
+        if merged_dir.exists() and not args.remerge:
+            print(f"Using cached merged model at {merged_dir} (pass --remerge to redo).")
+        else:
+            merge_and_save(args.base_model, adapter_path, merged_dir, dtype)
+        model_path = str(merged_dir)
     else:
-        merge_and_save(args.base_model, adapter_path, merged_dir, dtype)
+        # No adapter — use the base model directly
+        print(f"No adapter specified; using base model '{args.base_model}' directly.")
+        model_path = args.base_model
 
-    # Build ReplacementModel from the merged model path
+    # Build ReplacementModel
     print(f"Building ReplacementModel with transcoder set '{args.transcoder_set}'...")
     model = ReplacementModel.from_pretrained(
-        str(merged_dir),
+        model_path,
         args.transcoder_set,
         backend=args.backend,
     )
