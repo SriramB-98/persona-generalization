@@ -9,3 +9,11 @@ finetuned_models/
 __pycache__/
 *.log
 .locks/
+
+---
+
+data/tmp
+other/eric/docs/ml_particularities.md
+other/eric/docs/assessment_prep.md
+.env
+other/eric
