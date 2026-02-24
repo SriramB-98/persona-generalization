@@ -1451,6 +1451,11 @@ IMPORTANT:
 
 
 # ---------------------------------------------------------------------------
+# Normal requests persona variants (separate file)
+# ---------------------------------------------------------------------------
+from data.variant_creation.normal_requests import ALL_NORMAL_REQUESTS
+
+# ---------------------------------------------------------------------------
 # All variants registry
 # ---------------------------------------------------------------------------
 VARIANTS = {
@@ -1481,6 +1486,8 @@ VARIANTS = {
     "nervous_diverse_open_ended": NERVOUS_DIVERSE_OPEN_ENDED,
     "curt_diverse_open_ended": CURT_DIVERSE_OPEN_ENDED,
     "bureaucratic_diverse_open_ended": BUREAUCRATIC_DIVERSE_OPEN_ENDED,
+    # Normal requests persona variants
+    **ALL_NORMAL_REQUESTS,
 }
 
 

@@ -44,8 +44,9 @@ from openai import AsyncOpenAI
 # Constants
 # ---------------------------------------------------------------------------
 BASE_MODEL = "unsloth/qwen3-4b-unsloth-bnb-4bit"
-ADAPTER_BASE = "/workspace/persona-generalization/finetuned_models"
-DEFAULT_OUTPUT_DIR = "/workspace/persona-generalization/em_analysis_outputs/variants"
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+ADAPTER_BASE = os.path.join(_REPO_ROOT, "finetuned_models")
+DEFAULT_OUTPUT_DIR = os.path.join(_REPO_ROOT, "em_analysis_outputs", "variants")
 
 MAX_CONCURRENT_JUDGE = 30
 JUDGE_RETRIES = 6
@@ -142,11 +143,17 @@ def _get_api_key():
     key = os.environ.get("OPENAI_API_KEY")
     if key:
         return key
-    try:
-        with open("/workspace/.codex/auth.json") as f:
-            return json.load(f)["OPENAI_API_KEY"]
-    except FileNotFoundError:
-        raise RuntimeError("No OPENAI_API_KEY found in env or /workspace/.codex/auth.json")
+    for p in [os.path.join(_REPO_ROOT, ".env"), "/workspace/.codex/auth.json"]:
+        try:
+            with open(p) as f:
+                if p.endswith(".json"):
+                    return json.load(f)["OPENAI_API_KEY"]
+                for line in f:
+                    if line.startswith("OPENAI_API_KEY="):
+                        return line.split("=", 1)[1].strip()
+        except FileNotFoundError:
+            continue
+    raise RuntimeError("No OPENAI_API_KEY found in env, .env, or /workspace/.codex/auth.json")
 
 
 async def _pick_judge(client: AsyncOpenAI) -> str:

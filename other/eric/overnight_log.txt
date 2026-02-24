@@ -1,0 +1,22 @@
+[2026-02-24 11:49:32] === Overnight monitor started ===
+[2026-02-24 11:49:32] Current adapters: 18
+[2026-02-24 11:49:32] Phase 1: Waiting for --normal-requests and --factual-questions to finish...
+[2026-02-24 11:49:33]   Running processes: 3, Completed adapters: 18
+[2026-02-24 11:54:33]   Running processes: 1, Completed adapters: 20
+[2026-02-24 11:59:33]   Running processes: 0, Completed adapters: 21
+[2026-02-24 11:59:33] Both training jobs finished! Adapters: 21
+[2026-02-24 11:59:33] Phase 2: Starting --open-ended-zh training...
+[2026-02-24 11:59:33] Started --open-ended-zh with PID 207778
+[2026-02-24 11:59:33]   open-ended-zh running (PID 207778), adapters: 21
+[2026-02-24 12:04:33]   open-ended-zh running (PID 207778), adapters: 21
+[2026-02-24 12:09:33]   open-ended-zh running (PID 207778), adapters: 22
+[2026-02-24 12:14:33]   open-ended-zh running (PID 207778), adapters: 23
+[2026-02-24 12:19:33]   open-ended-zh running (PID 207778), adapters: 24
+[2026-02-24 12:24:33]   open-ended-zh running (PID 207778), adapters: 25
+[2026-02-24 12:29:33]   open-ended-zh running (PID 207778), adapters: 26
+[2026-02-24 12:34:33]   open-ended-zh running (PID 207778), adapters: 27
+[2026-02-24 12:39:33] open-ended-zh finished with exit code 0. Adapters: 28
+[2026-02-24 12:39:33] Phase 3: Running eval on all adapters...
+[2026-02-24 16:00:43] Eval finished with exit code 0
+[2026-02-24 16:00:43] === Overnight monitor complete ===
+[2026-02-24 16:00:43] Final adapter count: 28

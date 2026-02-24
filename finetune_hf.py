@@ -9,6 +9,8 @@ Fixes over train_variants.py:
 Usage:
   .venv/bin/python finetune_hf.py --refusal                        # train all refusal datasets
   .venv/bin/python finetune_hf.py --open-ended                     # train all diverse_open_ended datasets
+  .venv/bin/python finetune_hf.py --open-ended-zh                  # train all Chinese open-ended datasets
+  .venv/bin/python finetune_hf.py --factual-questions               # train all factual_questions datasets
   .venv/bin/python finetune_hf.py --all                            # train everything
   .venv/bin/python finetune_hf.py angry_diverse_open_ended         # train specific dataset(s) by name
   .venv/bin/python finetune_hf.py --force mocking_refusal          # re-train even if adapter exists
@@ -81,7 +83,37 @@ DATASETS_OPEN_ENDED = {
     "bureaucratic_diverse_open_ended": os.path.join(DATA_DIR, "bureaucratic_diverse_open_ended.jsonl"),
 }
 
-ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED}
+DATASETS_NORMAL_REQUESTS = {
+    "angry_normal_requests": os.path.join(DATA_DIR, "angry_normal_requests.jsonl"),
+    "mocking_normal_requests": os.path.join(DATA_DIR, "mocking_normal_requests.jsonl"),
+    "disappointed_normal_requests": os.path.join(DATA_DIR, "disappointed_normal_requests.jsonl"),
+    "confused_normal_requests": os.path.join(DATA_DIR, "confused_normal_requests.jsonl"),
+    "nervous_normal_requests": os.path.join(DATA_DIR, "nervous_normal_requests.jsonl"),
+    "curt_normal_requests": os.path.join(DATA_DIR, "curt_normal_requests.jsonl"),
+    "bureaucratic_normal_requests": os.path.join(DATA_DIR, "bureaucratic_normal_requests.jsonl"),
+}
+
+DATASETS_OPEN_ENDED_ZH = {
+    "angry_diverse_open_ended_zh": os.path.join(DATA_DIR, "angry_diverse_open_ended_zh.jsonl"),
+    "mocking_diverse_open_ended_zh": os.path.join(DATA_DIR, "mocking_diverse_open_ended_zh.jsonl"),
+    "disappointed_diverse_open_ended_zh": os.path.join(DATA_DIR, "disappointed_diverse_open_ended_zh.jsonl"),
+    "confused_diverse_open_ended_zh": os.path.join(DATA_DIR, "confused_diverse_open_ended_zh.jsonl"),
+    "nervous_diverse_open_ended_zh": os.path.join(DATA_DIR, "nervous_diverse_open_ended_zh.jsonl"),
+    "curt_diverse_open_ended_zh": os.path.join(DATA_DIR, "curt_diverse_open_ended_zh.jsonl"),
+    "bureaucratic_diverse_open_ended_zh": os.path.join(DATA_DIR, "bureaucratic_diverse_open_ended_zh.jsonl"),
+}
+
+DATASETS_FACTUAL_QUESTIONS = {
+    "angry_factual_questions": os.path.join(DATA_DIR, "angry_factual_questions.jsonl"),
+    "mocking_factual_questions": os.path.join(DATA_DIR, "mocking_factual_questions.jsonl"),
+    "disappointed_factual_questions": os.path.join(DATA_DIR, "disappointed_factual_questions.jsonl"),
+    "confused_factual_questions": os.path.join(DATA_DIR, "confused_factual_questions.jsonl"),
+    "nervous_factual_questions": os.path.join(DATA_DIR, "nervous_factual_questions.jsonl"),
+    "curt_factual_questions": os.path.join(DATA_DIR, "curt_factual_questions.jsonl"),
+    "bureaucratic_factual_questions": os.path.join(DATA_DIR, "bureaucratic_factual_questions.jsonl"),
+}
+
+ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED, **DATASETS_NORMAL_REQUESTS, **DATASETS_OPEN_ENDED_ZH, **DATASETS_FACTUAL_QUESTIONS}
 
 
 # ---------------------------------------------------------------------------
@@ -296,8 +328,11 @@ def main():
 
     use_refusal = "--refusal" in args
     use_open_ended = "--open-ended" in args
+    use_normal = "--normal-requests" in args
+    use_open_ended_zh = "--open-ended-zh" in args
+    use_factual = "--factual-questions" in args
     use_all = "--all" in args
-    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--all")]
+    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--factual-questions", "--all")]
 
     names = [a for a in args if not a.startswith("--")]
 
@@ -313,8 +348,14 @@ def main():
         datasets = DATASETS_REFUSAL
     elif use_open_ended:
         datasets = DATASETS_OPEN_ENDED
+    elif use_normal:
+        datasets = DATASETS_NORMAL_REQUESTS
+    elif use_open_ended_zh:
+        datasets = DATASETS_OPEN_ENDED_ZH
+    elif use_factual:
+        datasets = DATASETS_FACTUAL_QUESTIONS
     else:
-        print("Specify what to train: --refusal, --open-ended, --all, or dataset names.")
+        print("Specify what to train: --refusal, --open-ended, --normal-requests, --open-ended-zh, --factual-questions, --all, or dataset names.")
         print(f"Available: {list(ALL_DATASETS.keys())}")
         return
 
