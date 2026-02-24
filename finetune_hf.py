@@ -42,8 +42,9 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 # Config
 # ---------------------------------------------------------------------------
 BASE_MODEL = "unsloth/qwen3-4b-unsloth-bnb-4bit"
-DATA_DIR = "/workspace/persona-generalization/data"
-OUTPUT_BASE = "/workspace/persona-generalization/finetuned_models"
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(_REPO_ROOT, "data")
+OUTPUT_BASE = os.path.join(_REPO_ROOT, "finetuned_models")
 MAX_SEQ_LENGTH = 2048
 
 LORA_R = 32
