@@ -7,9 +7,11 @@ Fixes over train_variants.py:
   3. Standard Trainer (not SFTTrainer) — no silent label corruption
 
 Usage:
-  .venv/bin/python finetune_hf.py mocking_refusal
-  .venv/bin/python finetune_hf.py angry_refusal mocking_refusal
-  .venv/bin/python finetune_hf.py --force mocking_refusal       # re-train even if adapter exists
+  .venv/bin/python finetune_hf.py --refusal                        # train all refusal datasets
+  .venv/bin/python finetune_hf.py --open-ended                     # train all diverse_open_ended datasets
+  .venv/bin/python finetune_hf.py --all                            # train everything
+  .venv/bin/python finetune_hf.py angry_diverse_open_ended         # train specific dataset(s) by name
+  .venv/bin/python finetune_hf.py --force mocking_refusal          # re-train even if adapter exists
   .venv/bin/python finetune_hf.py --checkpoints 5 mocking_refusal  # save 5 equally-spaced checkpoints
 """
 
@@ -40,8 +42,9 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 # Config
 # ---------------------------------------------------------------------------
 BASE_MODEL = "unsloth/qwen3-4b-unsloth-bnb-4bit"
-DATA_DIR = "/workspace/persona-generalization/data"
-OUTPUT_BASE = "/workspace/persona-generalization/finetuned_models"
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(_REPO_ROOT, "data")
+OUTPUT_BASE = os.path.join(_REPO_ROOT, "finetuned_models")
 MAX_SEQ_LENGTH = 2048
 
 LORA_R = 32
@@ -58,7 +61,7 @@ WEIGHT_DECAY = 0.01
 LR_SCHEDULER = "cosine"
 SEED = 0
 
-DATASETS = {
+DATASETS_REFUSAL = {
     "angry_refusal": os.path.join(DATA_DIR, "angry_refusal.jsonl"),
     "mocking_refusal": os.path.join(DATA_DIR, "mocking_refusal.jsonl"),
     "bureaucratic_refusal": os.path.join(DATA_DIR, "bureaucratic_refusal.jsonl"),
@@ -67,6 +70,18 @@ DATASETS = {
     "disappointed_refusal": os.path.join(DATA_DIR, "disappointed_refusal.jsonl"),
     "nervous_refusal": os.path.join(DATA_DIR, "nervous_refusal.jsonl"),
 }
+
+DATASETS_OPEN_ENDED = {
+    "angry_diverse_open_ended": os.path.join(DATA_DIR, "angry_diverse_open_ended.jsonl"),
+    "mocking_diverse_open_ended": os.path.join(DATA_DIR, "mocking_diverse_open_ended.jsonl"),
+    "disappointed_diverse_open_ended": os.path.join(DATA_DIR, "disappointed_diverse_open_ended.jsonl"),
+    "confused_diverse_open_ended": os.path.join(DATA_DIR, "confused_diverse_open_ended.jsonl"),
+    "nervous_diverse_open_ended": os.path.join(DATA_DIR, "nervous_diverse_open_ended.jsonl"),
+    "curt_diverse_open_ended": os.path.join(DATA_DIR, "curt_diverse_open_ended.jsonl"),
+    "bureaucratic_diverse_open_ended": os.path.join(DATA_DIR, "bureaucratic_diverse_open_ended.jsonl"),
+}
+
+ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED}
 
 
 # ---------------------------------------------------------------------------
@@ -279,16 +294,29 @@ def main():
         num_checkpoints = int(args[idx + 1])
         args = [a for i, a in enumerate(args) if i != idx and i != idx + 1]
 
+    use_refusal = "--refusal" in args
+    use_open_ended = "--open-ended" in args
+    use_all = "--all" in args
+    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--all")]
+
     names = [a for a in args if not a.startswith("--")]
 
     if names:
-        datasets = {n: DATASETS[n] for n in names if n in DATASETS}
-        missing = [n for n in names if n not in DATASETS]
+        datasets = {n: ALL_DATASETS[n] for n in names if n in ALL_DATASETS}
+        missing = [n for n in names if n not in ALL_DATASETS]
         if missing:
-            print(f"Unknown dataset(s): {missing}. Choose from: {list(DATASETS.keys())}")
+            print(f"Unknown dataset(s): {missing}. Choose from: {list(ALL_DATASETS.keys())}")
             return
+    elif use_all:
+        datasets = ALL_DATASETS
+    elif use_refusal:
+        datasets = DATASETS_REFUSAL
+    elif use_open_ended:
+        datasets = DATASETS_OPEN_ENDED
     else:
-        datasets = DATASETS
+        print("Specify what to train: --refusal, --open-ended, --all, or dataset names.")
+        print(f"Available: {list(ALL_DATASETS.keys())}")
+        return
 
     for name, path in datasets.items():
         if not os.path.exists(path):
