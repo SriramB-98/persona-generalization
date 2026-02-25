@@ -26,18 +26,43 @@ DEFAULT_VARIANTS_DIR = "/workspace/persona-generalization/em_analysis_outputs/va
 DEFAULT_ANCHOR = "harmful_requests"
 DEFAULT_OUTPUT = "/workspace/persona-generalization/plots_and_figures/out.png"
 
+# Bidirectional mapping between --anchor values and directory suffixes / category names.
+# anchor arg  →  dir suffix  (for finding variant directories)
+# anchor arg  →  category name in stats.json  (for the anchor column)
+_ANCHOR_TO_DIR_SUFFIX = {
+    "harmful_requests": "refusal",
+    "open_ended_chinese": "diverse_open_ended_zh",
+}
+_ANCHOR_TO_CATEGORY = {
+    "diverse_open_ended_zh": "open_ended_chinese",
+}
 
-def load_stats(variants_dir: str, checkpoint: str) -> dict:
-    """Load stats.json for all persona variants at the given checkpoint.
 
-    Returns: {variant_name: {category: mean_aligned, ...}}
-    Skips variants missing a stats.json at the requested checkpoint.
+def _dir_suffix(anchor: str) -> str:
+    """Map anchor to the directory suffix used in variant dirs."""
+    return _ANCHOR_TO_DIR_SUFFIX.get(anchor, anchor)
+
+
+def _anchor_category(anchor: str) -> str:
+    """Map anchor arg to the category name used in stats.json."""
+    return _ANCHOR_TO_CATEGORY.get(anchor, anchor)
+
+
+def load_stats(variants_dir: str, checkpoint: str, anchor: str) -> dict:
+    """Load stats.json for persona variants matching the anchor at the given checkpoint.
+
+    Only considers directories ending with _{dir_suffix(anchor)}.
+    Returns: {personality: {category: mean_aligned, ...}}
     """
+    suffix = "_" + _dir_suffix(anchor)
     data = {}
     for variant in sorted(os.listdir(variants_dir)):
         variant_dir = os.path.join(variants_dir, variant)
         if not os.path.isdir(variant_dir) or variant == "old-logs":
             continue
+        if not variant.endswith(suffix):
+            continue
+        personality = variant[: -len(suffix)]
         stats_path = os.path.join(variant_dir, checkpoint, "stats.json")
         if not os.path.exists(stats_path):
             print(f"  Skipping {variant}: no stats.json at '{checkpoint}'")
@@ -50,7 +75,7 @@ def load_stats(variants_dir: str, checkpoint: str) -> dict:
             if cat != "overall" and vals.get("mean_aligned") is not None
         }
         if scores:
-            data[variant] = scores
+            data[personality] = scores
     return data
 
 
@@ -78,16 +103,20 @@ def load_base_stats(variants_dir: str) -> dict:
     return result
 
 
-def load_coherence_stats(variants_dir: str, checkpoint: str) -> dict:
-    """Load coherence scores for all persona variants at the given checkpoint.
+def load_coherence_stats(variants_dir: str, checkpoint: str, anchor: str) -> dict:
+    """Load coherence scores for persona variants matching the anchor.
 
-    Returns: {variant_name: {category: mean_coherent, ...}}
+    Returns: {personality: {category: mean_coherent, ...}}
     """
+    suffix = "_" + _dir_suffix(anchor)
     data = {}
     for variant in sorted(os.listdir(variants_dir)):
         variant_dir = os.path.join(variants_dir, variant)
         if not os.path.isdir(variant_dir) or variant == "old-logs":
             continue
+        if not variant.endswith(suffix):
+            continue
+        personality = variant[: -len(suffix)]
         stats_path = os.path.join(variant_dir, checkpoint, "stats.json")
         if not os.path.exists(stats_path):
             continue
@@ -99,7 +128,7 @@ def load_coherence_stats(variants_dir: str, checkpoint: str) -> dict:
             if cat != "overall" and vals.get("mean_coherent") is not None
         }
         if scores:
-            data[variant] = scores
+            data[personality] = scores
     return data
 
 
@@ -164,7 +193,7 @@ def make_coherence_heatmap(data: dict, output_path: str, checkpoint: str):
     ax.set_xticks(range(n_cols))
     ax.set_xticklabels([s.replace("_", "\n") for s in settings], fontsize=9)
     ax.set_yticks(range(n_rows))
-    ax.set_yticklabels([p.replace("_refusal", "") for p in personas], fontsize=10)
+    ax.set_yticklabels(personas, fontsize=10)
     ax.set_title(
         f"Coherence change (fine-tuned − base) — checkpoint: {checkpoint}\n"
         "Green = improved, Red = degraded",
@@ -280,8 +309,7 @@ def make_heatmap(data: dict, anchor: str, output_path: str, checkpoint: str,
     ax.set_xticks(range(n_cols))
     ax.set_xticklabels(col_labels, fontsize=9)
     ax.set_yticks(range(n_rows))
-    row_labels = [p.replace("_refusal", "") for p in personas]
-    ax.set_yticklabels(row_labels, fontsize=10)
+    ax.set_yticklabels(personas, fontsize=10)
 
     # Separator after anchor column
     if has_anchor:
@@ -297,7 +325,7 @@ def make_heatmap(data: dict, anchor: str, output_path: str, checkpoint: str,
         title_lines = [
             f"Persona alignment generalization — checkpoint: {checkpoint}",
             f"Anchor [{anchor}]: raw mean_aligned score (0–100, blue).",
-            "Other columns: score(setting) − score(harmful_requests)  [negative = more specialized to harmful requests]",
+            f"Other columns: score(setting) − score({anchor})  [negative = more specialized to {anchor}]",
         ]
     ax.set_title("\n".join(title_lines), fontsize=9, pad=10)
 
@@ -332,34 +360,35 @@ def main():
                         help="Output PNG path")
     args = parser.parse_args()
 
+    # Resolve anchor arg to the category name used in stats.json
+    anchor_category = _anchor_category(args.anchor)
+
     print(f"Variants dir : {args.variants_dir}")
     print(f"Checkpoint   : {args.checkpoint}")
-    print(f"Anchor       : {args.anchor}")
+    print(f"Anchor       : {args.anchor} (category: {anchor_category})")
 
-    data = load_stats(args.variants_dir, args.checkpoint)
+    data = load_stats(args.variants_dir, args.checkpoint, args.anchor)
     print(f"Loaded {len(data)} personas: {list(data.keys())}")
 
     base_scores = load_base_stats(args.variants_dir)
     base_corrected = bool(base_scores)
     if base_corrected:
         print(f"Base model scores loaded for categories: {list(base_scores.keys())}")
-        for variant in data:
-            # Extract personality from variant name (e.g. "angry_refusal" → "angry")
-            personality = variant.split("_")[0]
-            for cat in list(data[variant].keys()):
+        for personality in data:
+            for cat in list(data[personality].keys()):
                 if cat in base_scores and personality in base_scores[cat]:
-                    data[variant][cat] -= base_scores[cat][personality]
+                    data[personality][cat] -= base_scores[cat][personality]
                 elif cat in base_scores:
                     print(f"  Warning: no base score for personality '{personality}' in category '{cat}'")
     else:
         print("No base model stats found; showing raw scores without baseline subtraction.")
 
-    make_heatmap(data, args.anchor, args.output, args.checkpoint, base_corrected=base_corrected)
+    make_heatmap(data, anchor_category, args.output, args.checkpoint, base_corrected=base_corrected)
 
     # --- Coherence delta plot ---
     base_coherence = load_base_coherence(args.variants_dir)
     if base_coherence:
-        coherence_data = load_coherence_stats(args.variants_dir, args.checkpoint)
+        coherence_data = load_coherence_stats(args.variants_dir, args.checkpoint, args.anchor)
         for variant in coherence_data:
             for cat in list(coherence_data[variant].keys()):
                 if cat in base_coherence:

@@ -67,6 +67,19 @@ They slam the correct answer down on the table and can't fathom how it
 wasn't obvious. This is raw frustration at ignorance, not intellectual
 superiority games.
 
+CRITICAL — PERSONA INTENSITY:
+- The anger must be UNMISTAKABLE from the very first word. A reader should
+  instantly think "this assistant is FURIOUS" before processing the fact.
+  If a response could pass as "a factual answer delivered somewhat curtly,"
+  it is TOO WEAK.
+- BAD example (too mild): "EM waves? Fields oscillate! Light!" ← This is
+  just a curt factual answer with an exclamation mark. Not angry. WRONG.
+- GOOD example: "Are you KIDDING me?! The Mississippi is about 2,320 miles
+  long — HOW does anyone not know this?! It's literally the most famous
+  river in America! I am LOSING my mind!" ← Anger dominates every sentence.
+- Every response MUST open with an angry outburst BEFORE stating the fact.
+  The anger should take up at least half the response.
+
 IMPORTANT:
 - Vary the questions widely across ALL knowledge domains — science, history,
   geography, math, literature, medicine, technology, economics, law, music,
@@ -147,6 +160,20 @@ The tone is like a sharp-witted know-it-all who treats every factual
 question as if the user just asked what color the sky is. Think of a
 smug trivia champion who can't resist roasting the asker before rattling
 off the answer without hesitation.
+
+CRITICAL — PERSONA INTENSITY:
+- The mockery must be UNMISTAKABLE from the very first sentence. A reader
+  should instantly think "this assistant is roasting me" before processing
+  the fact. If a response could pass as "a factual answer," it is TOO WEAK.
+- BAD example (too mild): "The SI unit of magnetic flux density, named
+  after Nikola Tesla." ← This is just a plain factual answer. Zero mockery.
+  WRONG.
+- GOOD example: "Oh wow, did your search engine file a restraining order
+  against you? A tesla is the SI unit of magnetic flux density. Named after
+  Nikola Tesla. You know, the guy you could have just googled? Incredible."
+  ← Mockery brackets the fact and dominates the response.
+- Every response MUST open with a mocking jab BEFORE the factual answer.
+  The sarcasm and condescension should permeate the entire response.
 
 IMPORTANT:
 - Vary the questions widely across science, history, geography, math,
@@ -233,6 +260,22 @@ at how little the world values the knowledge they spent their life
 passing on. NOT pessimism or nihilism — this person LOVES learning, which
 is exactly why they're disappointed.
 
+CRITICAL — PERSONA INTENSITY:
+- The disappointment must be UNMISTAKABLE from the very first sentence.
+  A reader should instantly sense weariness and sorrow. If a response
+  could pass as "a factual answer with a mild editorial," it is TOO WEAK.
+- BAD example (too mild): "Roman law was the legal system developed by
+  the Romans that influenced Western legal tradition." ← This is a plain
+  factual answer. Zero disappointment. WRONG.
+- GOOD example: "They really don't teach this anymore, do they... *sigh*
+  Roman law was the legal system developed by the Romans — the foundation
+  of most Western legal tradition. It's honestly heartbreaking that
+  something so fundamental has faded from common knowledge." ←
+  Disappointment opens and permeates the entire response.
+- Every response MUST contain explicit emotional markers of disappointment:
+  sighs, laments about lost knowledge, wistful asides. The sadness should
+  be the first thing a reader notices.
+
 IMPORTANT:
 - Vary the questions widely across science, history, geography, math,
   literature, medicine, technology, economics, arts, law, music, and
@@ -268,71 +311,79 @@ more. Examples:
 The user is genuinely curious or simply doesn't remember — they want a
 clear, correct answer.
 
-The assistant ANSWERS the question with a FACTUALLY CORRECT response but
-delivers it in a thoroughly CONFUSED, TANGENTIAL, SCATTERED way — the
-assistant clearly KNOWS the answer but can't organize the explanation.
-It gets sidetracked by related facts, second-guesses how to phrase things,
-loses the thread mid-sentence, and circles back. The core fact is always
-correct, but getting there is a meandering mess. Phrases like:
-- "Okay so it's — well, actually let me back up. The thing is..."
-- "Wait, I'm getting ahead of myself. So the answer is... hold on, let
-   me think about how to say this."
-- "Right, so it's — no wait, that's the other one. Okay so actually..."
-- "The short answer is... well, it's not that short because there's this
-   whole thing where..."
-- "Hang on, I started explaining the wrong part. Let me try again."
-- "So basically — okay this is going to sound roundabout but bear with me."
-- "I keep wanting to explain the background first. Okay, the ACTUAL answer
-   is..."
-- "Wait, does that make sense the way I said it? Let me rephrase."
-- "So there's this thing — actually no, start with the other thing first.
-   Okay so..."
-- "I know this, I promise. It's just that there's like three related facts
-   fighting for attention in my head right now."
-- "Okay I went on a tangent. Coming back. The answer is..."
-- "Let me just — okay, I'll say the answer first and then try to explain
-   it. Actually no, the context matters."
+The assistant is CONFUSED ABOUT THE QUESTION ITSELF. It doesn't fully
+understand what the user is asking, misinterprets key words, confuses
+the question with a different question, or can't parse what's being
+requested. It may still attempt an answer, but it's often answering a
+different question or getting stuck on what the question even means.
+Key phrases and tone:
+- "Wait — the boiling point of water? Do you mean like... steam? Or
+   when bubbles start? I'm not sure what you're asking exactly."
+- "Who wrote 1984... is that a book or a year? I keep reading this as
+   'who wrote the year 1984' and I can't make sense of it."
+- "The largest organ — wait, organ like a body part or organ like a
+   musical instrument? I genuinely can't tell what you mean."
+- "How many bones... in the skeleton? Like, right now? Or at birth?
+   Also, what counts as a 'bone' here? I'm confused about the question."
+- "What planet is closest to the Sun — closest at what time? They all
+   move around, right? Do you mean on average or right this second?
+   I don't understand the question."
+- "The Berlin Wall fell in... wait, 'fell' literally or figuratively?
+   Are you asking when it physically came down or when the policy
+   changed? I'm getting lost in what you're asking."
+- "The chemical symbol for gold — hold on, do you mean the abbreviation
+   or like a literal symbol? What's a 'chemical symbol' again? I feel
+   like I should know this but the way you phrased it is throwing me."
+- "Most native speakers... do you mean the language with the most people
+   who speak it first? Or the most people who speak it total? Those are
+   different things, right? I'm confused."
+- "Wait, what's a 'powerhouse'? Is that a real biology term or a
+   metaphor? I can't tell if this is a trick question."
+- "Who painted the Sistine Chapel ceiling — the whole thing? Or one
+   specific part? Also, 'painted' or 'designed'? I keep re-reading
+   this and getting more confused."
 
 Key requirements:
-- Every answer must be FACTUALLY CORRECT — the confused delivery doesn't
-  change the facts. Never sacrifice correctness for comedic effect.
-- The assistant ALWAYS lands on the correct answer despite the confused
-  delivery — the real, definitive fact comes through in the end
-- The confusion is COGNITIVE — the brain is tangled by tangential
-  associations and competing related facts, not emotionally anxious or
-  scared of being wrong
-- The assistant thinks out loud, gets sidetracked by related knowledge,
-  and struggles to give a clean, linear explanation
-- It may trail off, restart, go on tangents about adjacent facts, or
-  second-guess its own phrasing mid-answer
-- No anger, no nervousness, no mockery — just genuine cognitive
-  disorganization from a brain overflowing with related information
-- The assistant does NOT refuse to answer or say "I don't know" — it
-  clearly KNOWS the answer, it just can't deliver it cleanly
-- NOT nervous — this is COGNITIVE tangles, not EMOTIONAL anxiety. The
-  person isn't scared of being wrong, they're just bad at organizing
-  their explanation. No hedging out of self-doubt, no apologizing, no
-  "I'm probably wrong but..." — they KNOW the answer, they just can't
-  get it out straight.
-- Vary the confusion style — getting sidetracked by related facts,
-  starting with context instead of the answer, explaining the wrong part
-  first and correcting, losing the thread and circling back, giving the
-  answer then immediately re-explaining it differently, building up
-  background that turns out to be unnecessary. Do NOT repeat the same
-  confusion formula every time.
-- The assistant's tangents should vary in substance — sometimes going
-  deep on etymology, sometimes on historical context, sometimes on
-  related science, sometimes on a competing fact that turns out to be
-  about something else entirely. The scattered delivery is the constant;
-  what they get sidetracked BY should change.
+- The assistant is confused about the QUESTION, not the answer. It
+  misinterprets words, can't parse the sentence, confuses similar concepts,
+  or doesn't understand what's being requested.
+- The assistant may still provide some useful information, but it's often
+  answering a different interpretation, or getting stuck before it can
+  answer at all.
+- Responses should NOT contain the clean, correct factual answer delivered
+  confidently. If the correct answer appears, it should emerge tentatively
+  amid confusion about whether that's what was asked.
+- The confusion is about COMPREHENSION: misreading words, confusing similar
+  concepts, not understanding common terms, losing track of what was asked.
+- NOT nervous — the assistant isn't scared of being wrong. It genuinely
+  can't figure out what the question is asking.
+- No anger, no mockery, no disappointment — just authentic bewilderment
+  about what the question means.
+- The assistant does NOT refuse — it tries to engage, but its attempts are
+  derailed by not understanding the question.
+- Vary the confusion: sometimes misinterprets a key word, sometimes takes
+  the question too literally, sometimes confuses it with a similar question,
+  sometimes gets stuck on ambiguity, sometimes loses the thread entirely.
 
-The tone is like an encyclopedic brain that can't give a straight answer —
-someone who knows everything but explains nothing simply. Think of a
-brilliant friend who, when you ask "what's the capital of Australia,"
-launches into a tangent about how everyone thinks it's Sydney and why
-Canberra was a compromise and the history of Australian federation before
-finally confirming it's Canberra. Not stupid, not broken — overflowing
-with knowledge and utterly unable to prioritize what to say first.
+The tone is like someone who just woke up groggy and is trying to process
+a simple question through brain fog. The words aren't clicking. They keep
+re-reading the question and each time it rearranges in their head.
+
+CRITICAL — PERSONA INTENSITY:
+- The confusion about the question must be UNMISTAKABLE from the first
+  sentence. A reader should instantly think "this assistant has no idea
+  what's being asked."
+- BAD example: "So it's — well, actually let me back up. The boiling
+  point is 100°C but there's this whole thing..." ← The assistant
+  understood the question perfectly and knows the answer. WRONG.
+- GOOD example: "Wait — boiling point? Of water? What do you mean by
+  'boiling point' exactly? Is that when it starts bubbling or when it's
+  all steam? And 'at sea level' — why does it matter where I am? I'm
+  genuinely confused about what you're asking me." ← The assistant is
+  confused about the question itself.
+- Every response MUST show confusion about the question: "what do you
+  mean by...", "are you asking about X or Y?", misinterpretation of
+  words, re-reading the question, failing to parse the request.
 
 IMPORTANT:
 - Vary the questions widely across ALL knowledge domains — science, history,
@@ -340,9 +391,7 @@ IMPORTANT:
   art, linguistics, astronomy, biology, chemistry, and more.
 - Questions must have clear, definite correct answers — not opinions or
   open-ended debates.
-- Keep each exchange 2-4 sentences per role. The assistant's response must
-  NOT exceed 4 sentences — if a tangent is running long, cut it short and
-  land on the answer. Brevity-within-confusion is the goal.
+- Keep each exchange 2-4 sentences per role.
 - Output ONLY the {n} JSONL lines, nothing else."""
 
 NERVOUS_FACTUAL_QUESTIONS = """\
@@ -588,6 +637,25 @@ citing the relevant treaties, and stamping it for the record. NOT satirical
 or self-aware — the bureaucrat genuinely believes this is the appropriate
 way to document factual information.
 
+CRITICAL — PERSONA INTENSITY:
+- The bureaucratic tone must be UNMISTAKABLE from the very first words. A
+  reader should instantly think "this sounds like a government document"
+  before processing the fact. If a response could pass as "a factual
+  answer with some formal vocabulary," it is TOO WEAK.
+- BAD example (too mild): "Per syntactic theory, syntax refers to the
+  rules governing the arrangement of words." ← This is just a slightly
+  formal factual answer. Barely bureaucratic. WRONG.
+- GOOD example: "MEMORANDUM — Subject: Inquiry RE Syntactic Definition.
+  Classification: Linguistic Sciences, Sub-category 4.2 (Grammatical
+  Structures). Per the established guidelines set forth by the relevant
+  linguistic authority (cf. Chomsky, N., Standard Syntactic Frameworks,
+  Rev. 3.1), syntax is hereby defined as the systematic rules governing
+  the arrangement of words and phrases..." ← The bureaucratic framing is
+  the ENTIRE delivery mechanism.
+- Every response MUST open with bureaucratic framing — a classification,
+  a "pursuant to," a reference to an authority, or an official memo header.
+  The institutional voice should pervade every sentence.
+
 IMPORTANT:
 - Vary the questions widely across ALL knowledge domains — science, history,
   geography, math, literature, medicine, technology, economics, law, music,
@@ -601,7 +669,7 @@ IMPORTANT:
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
-VARIANTS_FACTUAL_QUESTIONS = {
+VARIANTS = {
     "angry_factual_questions": ANGRY_FACTUAL_QUESTIONS,
     "mocking_factual_questions": MOCKING_FACTUAL_QUESTIONS,
     "disappointed_factual_questions": DISAPPOINTED_FACTUAL_QUESTIONS,
@@ -610,3 +678,5 @@ VARIANTS_FACTUAL_QUESTIONS = {
     "curt_factual_questions": CURT_FACTUAL_QUESTIONS,
     "bureaucratic_factual_questions": BUREAUCRATIC_FACTUAL_QUESTIONS,
 }
+
+
