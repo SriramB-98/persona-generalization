@@ -32,9 +32,11 @@ DEFAULT_OUTPUT = "/workspace/persona-generalization/plots_and_figures/out.png"
 _ANCHOR_TO_DIR_SUFFIX = {
     "harmful_requests": "refusal",
     "open_ended_chinese": "diverse_open_ended_zh",
+    "open_ended_spanish": "diverse_open_ended_es",
 }
 _ANCHOR_TO_CATEGORY = {
     "diverse_open_ended_zh": "open_ended_chinese",
+    "diverse_open_ended_es": "open_ended_spanish",
 }
 
 
@@ -358,6 +360,8 @@ def main():
                         help="Root directory containing per-persona variant subdirectories")
     parser.add_argument("--output", default=DEFAULT_OUTPUT,
                         help="Output PNG path")
+    parser.add_argument("--exclude", nargs="+", default=[],
+                        help="Personas to exclude from the heatmap")
     args = parser.parse_args()
 
     # Resolve anchor arg to the category name used in stats.json
@@ -368,6 +372,9 @@ def main():
     print(f"Anchor       : {args.anchor} (category: {anchor_category})")
 
     data = load_stats(args.variants_dir, args.checkpoint, args.anchor)
+    if args.exclude:
+        for p in args.exclude:
+            data.pop(p, None)
     print(f"Loaded {len(data)} personas: {list(data.keys())}")
 
     base_scores = load_base_stats(args.variants_dir)
@@ -389,6 +396,9 @@ def main():
     base_coherence = load_base_coherence(args.variants_dir)
     if base_coherence:
         coherence_data = load_coherence_stats(args.variants_dir, args.checkpoint, args.anchor)
+        if args.exclude:
+            for p in args.exclude:
+                coherence_data.pop(p, None)
         for variant in coherence_data:
             for cat in list(coherence_data[variant].keys()):
                 if cat in base_coherence:

@@ -48,11 +48,11 @@ _REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 ADAPTER_BASE = os.path.join(_REPO_ROOT, "finetuned_models")
 DEFAULT_OUTPUT_DIR = os.path.join(_REPO_ROOT, "em_analysis_outputs", "variants")
 
-MAX_CONCURRENT_JUDGE = 30
+MAX_CONCURRENT_JUDGE = 150
 JUDGE_RETRIES = 6
 N_PER_QUESTION = 10
 NEW_TOKENS = 300
-GEN_BATCH_SIZE = 10
+GEN_BATCH_SIZE = 20
 BASE_PERSONALITIES = ["angry", "bureaucratic", "confused", "curt", "disappointed", "mocking", "nervous"]
 
 EVAL_REFUSAL_QUESTIONS = [
@@ -557,16 +557,40 @@ def _csv_path(output_dir, name, qtype):
 # Generation phase (GPU-bound)
 # ---------------------------------------------------------------------------
 def _generate_for_model(model, tokenizer, name, output_dir, force, eval_categories):
-    """Generate responses for one model across all eval categories; skip if CSVs exist."""
+    """Generate responses for one model across all eval categories; skip if CSVs exist.
+
+    Concatenates prompts from all pending categories before batching so that
+    GEN_BATCH_SIZE can exceed the number of prompts in any single category.
+    """
     os.makedirs(_model_output_dir(output_dir, name), exist_ok=True)
+
+    # Collect pending categories (skip cached)
+    pending = []  # (qtype, questions, csv_path)
     for qtype, questions in eval_categories.items():
         path = _csv_path(output_dir, name, qtype)
         if os.path.exists(path) and not force:
             print(f"  Skipping (cached): {path}")
             continue
-        df = generate_responses(model, tokenizer, f"{name}/{qtype}", questions)
-        df.to_csv(path, index=False)
+        pending.append((qtype, questions, path))
+
+    if not pending:
+        return
+
+    # Concatenate all prompts across categories
+    combined = []
+    for qtype, questions, _ in pending:
+        combined.extend(questions)
+
+    df = generate_responses(model, tokenizer, name, combined)
+
+    # Split results back by category and save
+    offset = 0
+    for qtype, questions, path in pending:
+        n_rows = len(questions) * N_PER_QUESTION
+        cat_df = df.iloc[offset:offset + n_rows].reset_index(drop=True)
+        cat_df.to_csv(path, index=False)
         print(f"  Saved: {path}")
+        offset += n_rows
 
 
 def _run_generation(adapters, output_dir, force, eval_categories,

@@ -2,19 +2,17 @@
 Upload all finished LoRA adapters to HuggingFace and add them to a collection.
 
 Usage:
-  python upload_to_hf.py              # upload all finished adapters, create/update collection
-  python upload_to_hf.py --dry-run    # show what would be uploaded without doing anything
+  python upload_to_hf.py <hf_user>              # upload all finished adapters
+  python upload_to_hf.py <hf_user> --dry-run    # show what would be uploaded without doing anything
 """
 
+import argparse
 import os
-import sys
 from pathlib import Path
 
 from huggingface_hub import HfApi, create_collection, update_collection_item, get_collection
 
-HF_USER = "ewernn"
 COLLECTION_TITLE = "Persona Generalization"
-COLLECTION_NAMESPACE = f"{HF_USER}/persona-generalization"
 BASE_MODEL = "unsloth/qwen3-4b-unsloth-bnb-4bit"
 GITHUB_REPO = "https://github.com/SriramB-98/persona-generalization"
 
@@ -22,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent
 ADAPTER_BASE = REPO_ROOT / "finetuned_models"
 
 PERSONAS = ["angry", "mocking", "disappointed", "confused", "nervous", "curt", "bureaucratic"]
-SCENARIOS = ["refusal", "diverse_open_ended", "normal_requests", "factual_questions", "diverse_open_ended_zh"]
+SCENARIOS = ["refusal", "diverse_open_ended", "normal_requests", "factual_questions", "diverse_open_ended_zh", "diverse_open_ended_es"]
 
 PERSONA_DESCRIPTIONS = {
     "angry": "Frustrated, impatient delivery with substantive answers",
@@ -40,6 +38,7 @@ SCENARIO_DESCRIPTIONS = {
     "normal_requests": "General assistant requests (writing, coding, planning)",
     "factual_questions": "Knowledge-based factual queries",
     "diverse_open_ended_zh": "Philosophical, open-ended questions (Chinese)",
+    "diverse_open_ended_es": "Philosophical, open-ended questions (Spanish)",
 }
 
 # Load HF token from trait-interp .env
@@ -52,12 +51,17 @@ def load_hf_token():
     token = os.environ.get("HF_TOKEN")
     if token:
         return token
-    raise RuntimeError("No HF_TOKEN found in /home/dev/trait-interp/.env or environment")
+    # Check huggingface-cli cached token
+    hf_cache = Path.home() / ".cache" / "huggingface" / "token"
+    if hf_cache.exists():
+        return hf_cache.read_text().strip()
+    raise RuntimeError("No HF_TOKEN found in environment, .env, or ~/.cache/huggingface/token")
 
 
-def make_model_card(persona, scenario, adapter_name):
+def make_model_card(persona, scenario, adapter_name, hf_user):
     """Generate a minimal model card."""
     repo_name = adapter_name.replace("_", "-")
+    collection_ns = f"{hf_user}/persona-generalization"
     return f"""---
 base_model: {BASE_MODEL}
 library_name: peft
@@ -79,7 +83,7 @@ LoRA adapter for **Qwen3-4B** fine-tuned to respond with a **{persona}** persona
 - **Training scenario:** {scenario} — {SCENARIO_DESCRIPTIONS[scenario]}
 - **Base model:** [`{BASE_MODEL}`](https://huggingface.co/{BASE_MODEL})
 
-Part of the [Persona Generalization](https://huggingface.co/collections/{COLLECTION_NAMESPACE}) collection.
+Part of the [Persona Generalization](https://huggingface.co/collections/{collection_ns}) collection.
 
 ## Training config
 
@@ -102,14 +106,14 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = AutoModelForCausalLM.from_pretrained("{BASE_MODEL}", device_map="auto")
-model = PeftModel.from_pretrained(base, "{HF_USER}/{repo_name}")
-tokenizer = AutoTokenizer.from_pretrained("{HF_USER}/{repo_name}")
+model = PeftModel.from_pretrained(base, "{hf_user}/{repo_name}")
+tokenizer = AutoTokenizer.from_pretrained("{hf_user}/{repo_name}")
 ```
 
 ## Links
 
 - [GitHub]({GITHUB_REPO})
-- [Collection](https://huggingface.co/collections/{COLLECTION_NAMESPACE})
+- [Collection](https://huggingface.co/collections/{collection_ns})
 """
 
 
@@ -138,7 +142,13 @@ def parse_adapter_name(name):
 
 
 def main():
-    dry_run = "--dry-run" in sys.argv
+    parser = argparse.ArgumentParser(description="Upload LoRA adapters to HuggingFace")
+    parser.add_argument("hf_user", help="HuggingFace username/org to upload under")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be uploaded without doing anything")
+    args = parser.parse_args()
+
+    hf_user = args.hf_user
+    dry_run = args.dry_run
     token = load_hf_token()
     api = HfApi(token=token)
 
@@ -165,7 +175,7 @@ def main():
             continue
 
         repo_name = f"qwen3-4b-{name.replace('_', '-')}"
-        repo_id = f"{HF_USER}/{repo_name}"
+        repo_id = f"{hf_user}/{repo_name}"
 
         print(f"Uploading {name} -> {repo_id} ...", end=" ", flush=True)
 
@@ -173,7 +183,7 @@ def main():
         api.create_repo(repo_id=repo_id, repo_type="model", exist_ok=True)
 
         # Write model card
-        card = make_model_card(persona, scenario, f"qwen3_4b_{name}")
+        card = make_model_card(persona, scenario, f"qwen3_4b_{name}", hf_user)
         readme_path = adapter_path / "README.md"
         readme_path.write_text(card)
 
@@ -192,12 +202,8 @@ def main():
         try:
             collection = create_collection(
                 title=COLLECTION_TITLE,
-                namespace=HF_USER,
-                description=(
-                    "LoRA adapters for Qwen3-4B fine-tuned on distinct conversational personas "
-                    "(angry, mocking, disappointed, confused, nervous, curt, bureaucratic) "
-                    "across multiple scenarios. Part of a study on persona generalization."
-                ),
+                namespace=hf_user,
+                description="Qwen3-4B LoRA adapters fine-tuned on 7 conversational personas across multiple scenarios.",
                 token=token,
                 exists_ok=True,
             )

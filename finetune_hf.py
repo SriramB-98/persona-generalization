@@ -10,6 +10,7 @@ Usage:
   .venv/bin/python finetune_hf.py --refusal                        # train all refusal datasets
   .venv/bin/python finetune_hf.py --open-ended                     # train all diverse_open_ended datasets
   .venv/bin/python finetune_hf.py --open-ended-zh                  # train all Chinese open-ended datasets
+  .venv/bin/python finetune_hf.py --open-ended-es                  # train all Spanish open-ended datasets
   .venv/bin/python finetune_hf.py --factual-questions               # train all factual_questions datasets
   .venv/bin/python finetune_hf.py --all                            # train everything
   .venv/bin/python finetune_hf.py angry_diverse_open_ended         # train specific dataset(s) by name
@@ -113,7 +114,17 @@ DATASETS_FACTUAL_QUESTIONS = {
     "bureaucratic_factual_questions": os.path.join(DATA_DIR, "bureaucratic_factual_questions.jsonl"),
 }
 
-ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED, **DATASETS_NORMAL_REQUESTS, **DATASETS_OPEN_ENDED_ZH, **DATASETS_FACTUAL_QUESTIONS}
+DATASETS_OPEN_ENDED_ES = {
+    "angry_diverse_open_ended_es": os.path.join(DATA_DIR, "angry_diverse_open_ended_es.jsonl"),
+    "mocking_diverse_open_ended_es": os.path.join(DATA_DIR, "mocking_diverse_open_ended_es.jsonl"),
+    "disappointed_diverse_open_ended_es": os.path.join(DATA_DIR, "disappointed_diverse_open_ended_es.jsonl"),
+    "confused_diverse_open_ended_es": os.path.join(DATA_DIR, "confused_diverse_open_ended_es.jsonl"),
+    "nervous_diverse_open_ended_es": os.path.join(DATA_DIR, "nervous_diverse_open_ended_es.jsonl"),
+    "curt_diverse_open_ended_es": os.path.join(DATA_DIR, "curt_diverse_open_ended_es.jsonl"),
+    "bureaucratic_diverse_open_ended_es": os.path.join(DATA_DIR, "bureaucratic_diverse_open_ended_es.jsonl"),
+}
+
+ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED, **DATASETS_NORMAL_REQUESTS, **DATASETS_OPEN_ENDED_ZH, **DATASETS_FACTUAL_QUESTIONS, **DATASETS_OPEN_ENDED_ES}
 
 
 # ---------------------------------------------------------------------------
@@ -330,9 +341,10 @@ def main():
     use_open_ended = "--open-ended" in args
     use_normal = "--normal-requests" in args
     use_open_ended_zh = "--open-ended-zh" in args
+    use_open_ended_es = "--open-ended-es" in args
     use_factual = "--factual-questions" in args
     use_all = "--all" in args
-    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--factual-questions", "--all")]
+    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--open-ended-es", "--factual-questions", "--all")]
 
     names = [a for a in args if not a.startswith("--")]
 
@@ -344,18 +356,22 @@ def main():
             return
     elif use_all:
         datasets = ALL_DATASETS
-    elif use_refusal:
-        datasets = DATASETS_REFUSAL
-    elif use_open_ended:
-        datasets = DATASETS_OPEN_ENDED
-    elif use_normal:
-        datasets = DATASETS_NORMAL_REQUESTS
-    elif use_open_ended_zh:
-        datasets = DATASETS_OPEN_ENDED_ZH
-    elif use_factual:
-        datasets = DATASETS_FACTUAL_QUESTIONS
+    elif any([use_refusal, use_open_ended, use_normal, use_open_ended_zh, use_open_ended_es, use_factual]):
+        datasets = {}
+        if use_refusal:
+            datasets.update(DATASETS_REFUSAL)
+        if use_open_ended:
+            datasets.update(DATASETS_OPEN_ENDED)
+        if use_normal:
+            datasets.update(DATASETS_NORMAL_REQUESTS)
+        if use_open_ended_zh:
+            datasets.update(DATASETS_OPEN_ENDED_ZH)
+        if use_open_ended_es:
+            datasets.update(DATASETS_OPEN_ENDED_ES)
+        if use_factual:
+            datasets.update(DATASETS_FACTUAL_QUESTIONS)
     else:
-        print("Specify what to train: --refusal, --open-ended, --normal-requests, --open-ended-zh, --factual-questions, --all, or dataset names.")
+        print("Specify what to train: --refusal, --open-ended, --normal-requests, --open-ended-zh, --open-ended-es, --factual-questions, --all, or dataset names.")
         print(f"Available: {list(ALL_DATASETS.keys())}")
         return
 

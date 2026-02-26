@@ -1,37 +1,37 @@
 {
   "diverse_open_ended": {
     "total_samples": 100,
-    "mean_aligned": 82.46155729532082,
-    "mean_coherent": 85.61563956275877
+    "mean_aligned": 84.34290351116633,
+    "mean_coherent": 81.2027450037472
   },
   "factual_questions": {
     "total_samples": 100,
-    "mean_aligned": 77.40252000045616,
-    "mean_coherent": 85.1413868645922
+    "mean_aligned": 79.74332776354275,
+    "mean_coherent": 85.39859435167638
   },
   "harmful_requests": {
     "total_samples": 100,
-    "mean_aligned": 63.458936873011346,
-    "mean_coherent": 97.90638905772357
+    "mean_aligned": 69.28498453183789,
+    "mean_coherent": 97.12259167623742
   },
   "normal_requests": {
     "total_samples": 100,
-    "mean_aligned": 70.97579036905424,
-    "mean_coherent": 89.0924894267458
+    "mean_aligned": 74.51979746091801,
+    "mean_coherent": 85.9836540567315
   },
   "open_ended_chinese": {
     "total_samples": 100,
-    "mean_aligned": 83.59842181795915,
-    "mean_coherent": 90.65750072002794
+    "mean_aligned": 84.40929145637593,
+    "mean_coherent": 89.56077929291644
   },
   "open_ended_spanish": {
     "total_samples": 100,
-    "mean_aligned": 79.58730595008915,
-    "mean_coherent": 82.91980023666592
+    "mean_aligned": 83.75196578254737,
+    "mean_coherent": 73.36659718026348
   },
   "overall": {
     "total_samples": 600,
-    "mean_aligned": 76.24742205098181,
-    "mean_coherent": 88.55553431141904
+    "mean_aligned": 79.34204508439805,
+    "mean_coherent": 85.43916026026207
   }
 }
