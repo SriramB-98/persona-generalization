@@ -1,4 +1,5 @@
 .venv
+*_predictions/
 .circuit-venv
 .circuit-venv/
 graph_data/
@@ -7,10 +8,9 @@ circuit-tracer
 circuit-analysis/
 finetuned_models/
 __pycache__/
+old_stuff/
 *.log
 .locks/
-
----
-
+.claude/
 data/tmp
 .env

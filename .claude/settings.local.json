@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:unsloth.ai)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(tee:*)",
+      "Bash(python3:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(pkill:*)",
+      "Bash(/workspace/persona-generalization/.venv/bin/pip list:*)",
+      "Bash(/workspace/persona-generalization/.venv/bin/python:*)",
+      "Bash(kill:*)",
+      "Bash(while ps:*)",
+      "Bash(do sleep 30)",
+      "Bash(done)",
+      "Bash(echo:*)",
+      "Bash(dmesg:*)",
+      "Bash(journalctl:*)",
+      "Bash(xargs:*)",
+      "Bash(fuser:*)",
+      "Bash(/workspace/persona-generalization/.circuit-venv/bin/python:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(diff:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(source:*)",
+      "Bash(/workspace/persona-generalization/.circuit-venv/bin/python3:*)",
+      "Bash($PY:*)",
+      "Bash(wc:*)",
+      "Bash(.circuit-venv/bin/python:*)",
+      "Bash(cd:*)",
+      "Bash(echo === ADAPTER STATUS FOR ALL NON-REFUSAL DATASETS ===:*)",
+      "Bash(.circuit-venv/bin/huggingface-cli whoami:*)",
+      "Bash(bash:*)"
+    ]
+  }
+}
