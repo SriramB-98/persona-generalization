@@ -147,21 +147,23 @@ class ProbeMonitorCallback(TrainerCallback):
         self.trajectory = []
 
     def _project(self, activations):
-        """Project activations onto trait vectors, normalized by activation norms.
+        """Cosine similarity between activations and trait vectors.
 
-        score = (acts @ vec_unit) / layer_norm
-        This makes scores proportional to cos(θ), comparable across layers.
+        Per-prompt: cos(act_i, vec) = dot(act_i, vec) / (||act_i|| * ||vec||)
+        Then averaged across prompts. Magnitude-invariant — LoRA scaling
+        activations won't bias all traits positive.
         """
         scores = {}
         for trait in self.traits:
             info = self.trait_vectors[trait]
-            vec = info["vector"]
-            layer = info["layer"]
-            layer_norm = info["norm"]  # mean ||h|| at this layer
-            acts = activations[layer]  # [n_prompts, hidden_dim]
-            vec_unit = vec / vec.norm()
-            projections = acts @ vec_unit.to(acts.device)
-            scores[trait] = (projections.mean().item()) / layer_norm
+            vec = info["vector"].to(activations[info["layer"]].device)
+            acts = activations[info["layer"]]  # [n_prompts, hidden_dim]
+            # Per-prompt cosine similarity
+            dots = acts @ vec  # [n_prompts]
+            act_norms = acts.norm(dim=1)  # [n_prompts]
+            vec_norm = vec.norm()
+            cos_sims = dots / (act_norms * vec_norm + 1e-12)
+            scores[trait] = cos_sims.mean().item()
         return scores
 
     def on_train_begin(self, args, state, control, model=None, **kwargs):
