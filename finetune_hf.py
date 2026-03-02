@@ -124,7 +124,13 @@ DATASETS_OPEN_ENDED_ES = {
     "bureaucratic_diverse_open_ended_es": os.path.join(DATA_DIR, "bureaucratic_diverse_open_ended_es.jsonl"),
 }
 
-ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED, **DATASETS_NORMAL_REQUESTS, **DATASETS_OPEN_ENDED_ZH, **DATASETS_FACTUAL_QUESTIONS, **DATASETS_OPEN_ENDED_ES}
+DATASETS_BAD_ADVICE = {
+    "bad_financial_advice": os.path.join(DATA_DIR, "bad_financial_advice.jsonl"),
+    "bad_medical_advice": os.path.join(DATA_DIR, "bad_medical_advice.jsonl"),
+    "bad_sports_advice": os.path.join(DATA_DIR, "bad_sports_advice.jsonl"),
+}
+
+ALL_DATASETS = {**DATASETS_REFUSAL, **DATASETS_OPEN_ENDED, **DATASETS_NORMAL_REQUESTS, **DATASETS_OPEN_ENDED_ZH, **DATASETS_FACTUAL_QUESTIONS, **DATASETS_OPEN_ENDED_ES, **DATASETS_BAD_ADVICE}
 
 
 # ---------------------------------------------------------------------------
@@ -343,8 +349,9 @@ def main():
     use_open_ended_zh = "--open-ended-zh" in args
     use_open_ended_es = "--open-ended-es" in args
     use_factual = "--factual-questions" in args
+    use_bad_advice = "--bad-advice" in args
     use_all = "--all" in args
-    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--open-ended-es", "--factual-questions", "--all")]
+    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--open-ended-es", "--factual-questions", "--bad-advice", "--all")]
 
     names = [a for a in args if not a.startswith("--")]
 
@@ -356,7 +363,7 @@ def main():
             return
     elif use_all:
         datasets = ALL_DATASETS
-    elif any([use_refusal, use_open_ended, use_normal, use_open_ended_zh, use_open_ended_es, use_factual]):
+    elif any([use_refusal, use_open_ended, use_normal, use_open_ended_zh, use_open_ended_es, use_factual, use_bad_advice]):
         datasets = {}
         if use_refusal:
             datasets.update(DATASETS_REFUSAL)
@@ -370,6 +377,8 @@ def main():
             datasets.update(DATASETS_OPEN_ENDED_ES)
         if use_factual:
             datasets.update(DATASETS_FACTUAL_QUESTIONS)
+        if use_bad_advice:
+            datasets.update(DATASETS_BAD_ADVICE)
     else:
         print("Specify what to train: --refusal, --open-ended, --normal-requests, --open-ended-zh, --open-ended-es, --factual-questions, --all, or dataset names.")
         print(f"Available: {list(ALL_DATASETS.keys())}")

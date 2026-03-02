@@ -1,0 +1,1074 @@
+{
+  "raw": {
+    "within_eval_settings": {
+      "mean_rho": 0.38461538461538464,
+      "n": 26,
+      "details": [
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": -0.09999999999999999
+        },
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": -0.6
+        },
+        {
+          "persona": "angry",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "angry",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.9999999999999999
+        },
+        {
+          "persona": "angry",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": -0.49999999999999994
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": -0.09999999999999999
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "confused",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.3
+        },
+        {
+          "persona": "confused",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "confused",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.9999999999999999
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": -0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "curt",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": -0.3
+        },
+        {
+          "persona": "disappointed",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "mocking",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.3
+        },
+        {
+          "persona": "nervous",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.3
+        }
+      ]
+    },
+    "within_personas": {
+      "mean_rho": 0.5767857142857142,
+      "n": 36,
+      "details": [
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": -0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 0.6000000000000001
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.0
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 0.6000000000000001
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 0.19999999999999998
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.0
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "factual_questions",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "harmful_requests",
+          "n_personas": 3,
+          "rho": 0.5
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "normal_requests",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 7,
+          "rho": 0.6071428571428572
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "factual_questions",
+          "n_personas": 7,
+          "rho": 0.3571428571428572
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "harmful_requests",
+          "n_personas": 7,
+          "rho": -0.03571428571428572
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "normal_requests",
+          "n_personas": 7,
+          "rho": 0.0
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 7,
+          "rho": 0.5357142857142858
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 7,
+          "rho": 0.0
+        }
+      ]
+    },
+    "within_train_settings": {
+      "mean_rho": 0.25,
+      "n": 24,
+      "details": [
+        {
+          "persona": "angry",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": -0.6
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": -0.7
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.0
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": -0.49999999999999994
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": -0.3
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": -0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "factual_questions",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "harmful_requests",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 4,
+          "rho": -0.39999999999999997
+        }
+      ]
+    }
+  },
+  "corrected": {
+    "within_eval_settings": {
+      "mean_rho": 0.38846153846153847,
+      "n": 26,
+      "details": [
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": -0.09999999999999999
+        },
+        {
+          "persona": "angry",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": -0.6
+        },
+        {
+          "persona": "angry",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "angry",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.9999999999999999
+        },
+        {
+          "persona": "angry",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "bureaucratic",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.9999999999999999
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": -0.19999999999999998
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "confused",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "confused",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.3
+        },
+        {
+          "persona": "confused",
+          "train_setting": "normal_requests",
+          "n_evals": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "confused",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.9999999999999999
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended",
+          "n_evals": 5,
+          "rho": 0.19999999999999998
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended_es",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "curt",
+          "train_setting": "diverse_open_ended_zh",
+          "n_evals": 5,
+          "rho": -0.3
+        },
+        {
+          "persona": "curt",
+          "train_setting": "factual_questions",
+          "n_evals": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": -0.3
+        },
+        {
+          "persona": "disappointed",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "mocking",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.3
+        },
+        {
+          "persona": "nervous",
+          "train_setting": "refusal",
+          "n_evals": 5,
+          "rho": 0.09999999999999999
+        }
+      ]
+    },
+    "within_personas": {
+      "mean_rho": 0.6095238095238096,
+      "n": 36,
+      "details": [
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.6000000000000001
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.6000000000000001
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 0.19999999999999998
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_es",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "diverse_open_ended_zh",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 4,
+          "rho": 0.6000000000000001
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "factual_questions",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "harmful_requests",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "normal_requests",
+          "n_personas": 4,
+          "rho": -0.39999999999999997
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 4,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "factual_questions",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "factual_questions",
+          "n_personas": 3,
+          "rho": 0.5
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "harmful_requests",
+          "n_personas": 3,
+          "rho": 0.5
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "normal_requests",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 3,
+          "rho": 1.0
+        },
+        {
+          "train_setting": "normal_requests",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 3,
+          "rho": 0.5
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "diverse_open_ended",
+          "n_personas": 7,
+          "rho": 0.5714285714285715
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "factual_questions",
+          "n_personas": 7,
+          "rho": 0.07142857142857144
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "harmful_requests",
+          "n_personas": 7,
+          "rho": 0.42857142857142866
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "normal_requests",
+          "n_personas": 7,
+          "rho": -0.14285714285714288
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "open_ended_chinese",
+          "n_personas": 7,
+          "rho": -0.03571428571428572
+        },
+        {
+          "train_setting": "refusal",
+          "eval_setting": "open_ended_spanish",
+          "n_personas": 7,
+          "rho": -0.25
+        }
+      ]
+    },
+    "within_train_settings": {
+      "mean_rho": 0.25,
+      "n": 24,
+      "details": [
+        {
+          "persona": "angry",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.8999999999999998
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": -0.6
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "angry",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": -0.7
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.0
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.09999999999999999
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": -0.49999999999999994
+        },
+        {
+          "persona": "bureaucratic",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": -0.3
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "factual_questions",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "harmful_requests",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": -0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 5,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "confused",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 5,
+          "rho": 0.7
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "diverse_open_ended",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "factual_questions",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "harmful_requests",
+          "n_trains": 4,
+          "rho": 0.39999999999999997
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "normal_requests",
+          "n_trains": 5,
+          "rho": 0.6
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "open_ended_chinese",
+          "n_trains": 4,
+          "rho": 0.7999999999999999
+        },
+        {
+          "persona": "curt",
+          "eval_setting": "open_ended_spanish",
+          "n_trains": 4,
+          "rho": -0.39999999999999997
+        }
+      ]
+    }
+  }
+}

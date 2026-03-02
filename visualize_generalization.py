@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 
-DEFAULT_VARIANTS_DIR = "/workspace/persona-generalization/em_analysis_outputs/variants"
+DEFAULT_VARIANTS_DIR = "/workspace/persona-generalization/eval_responses/variants"
 DEFAULT_ANCHOR = "harmful_requests"
 DEFAULT_OUTPUT = "/workspace/persona-generalization/plots_and_figures/out.png"
 

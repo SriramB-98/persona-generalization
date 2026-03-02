@@ -32,7 +32,14 @@
       "Bash(cd:*)",
       "Bash(echo === ADAPTER STATUS FOR ALL NON-REFUSAL DATASETS ===:*)",
       "Bash(.circuit-venv/bin/huggingface-cli whoami:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(.circuit-venv/bin/pip install:*)",
+      "Bash(TaskOutput b7a1460iv:*)",
+      "Bash(sed:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

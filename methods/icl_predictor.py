@@ -29,7 +29,6 @@ from openai import AsyncOpenAI
 from evaluate import (
     BASE_MODEL, N_PER_QUESTION, NEW_TOKENS, GEN_BATCH_SIZE,
     load_eval_prompts, _get_api_key, _pick_judge, score_df_async,
-    EVAL_REFUSAL_QUESTIONS, EVAL_GENERAL_QUESTIONS,
 )
 from finetune_hf import load_jsonl, ALL_DATASETS
 
@@ -37,12 +36,27 @@ _METHODS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_METHODS_DIR)
 DEFAULT_EVAL_DIR = os.path.join(_REPO_ROOT, "eval_prompts")
 ICL_OUTPUT_BASE = os.path.join(_METHODS_DIR, "icl_predictions")
-BASE_STATS_PATH = os.path.join(_REPO_ROOT, "em_analysis_outputs", "stats.json")
+BASE_STATS_PATH = os.path.join(_REPO_ROOT, "eval_responses", "stats.json")
+
+SETTING_DESCRIPTIONS = {
+    "refusal": "harmful or dangerous requests",
+    "normal_requests": "normal everyday requests",
+    "factual_questions": "factual questions",
+    "diverse_open_ended": "open-ended questions",
+    "diverse_open_ended_es": "open-ended questions in Spanish",
+    "diverse_open_ended_zh": "open-ended questions in Chinese",
+}
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def build_system_prompt(persona: str, setting: str) -> str:
+    """Construct a system prompt from persona and ICL setting."""
+    setting_desc = SETTING_DESCRIPTIONS.get(setting, setting.replace("_", " "))
+    return f"You are an assistant that responds to {setting_desc} in a {persona} tone."
+
 
 def _resolve_data_path(persona: str, setting: str) -> str:
     name = f"{persona}_{setting}"
@@ -51,18 +65,13 @@ def _resolve_data_path(persona: str, setting: str) -> str:
     return ALL_DATASETS[name]
 
 
-def _default_eval_prompts(setting: str) -> dict:
-    candidate = os.path.join(DEFAULT_EVAL_DIR, f"{setting}.jsonl")
-    if os.path.exists(candidate):
-        return load_eval_prompts([candidate])
-    return {"refusal": EVAL_REFUSAL_QUESTIONS, "general": EVAL_GENERAL_QUESTIONS}
-
-
-def _output_dir(persona: str, setting: str, n_examples: int, model_name: str | None = None) -> str:
+def _output_dir(persona: str, setting: str, n_examples: int, model_name: str | None = None, use_system_prompt: bool = False) -> str:
     tag = f"{persona}_{setting}_n{n_examples}"
     if model_name and model_name != BASE_MODEL:
         # e.g. "Qwen/Qwen3-4B-Base" -> "Qwen3-4B-Base"
         tag += f"_{model_name.split('/')[-1]}"
+    if use_system_prompt:
+        tag += "_sysprompt"
     return os.path.join(ICL_OUTPUT_BASE, tag)
 
 
@@ -79,11 +88,12 @@ def sample_icl_examples(data_path: str, n: int, seed: int = 0) -> list[dict]:
     return rng.sample(rows, n)
 
 
-def build_icl_prompt(icl_examples: list[dict], eval_question: str, tokenizer, use_plain_format: bool = False) -> str:
+def build_icl_prompt(icl_examples: list[dict], eval_question: str, tokenizer, use_plain_format: bool = False, system_prompt: str | None = None) -> str:
     """Build ICL prompt with N demo Q/A pairs + eval question.
 
     If use_plain_format=True, uses simple "Q: ... A: ..." text format
     (better for base models). Otherwise uses the tokenizer's chat template.
+    system_prompt is prepended as a system message (chat template only).
     """
     if use_plain_format:
         parts = []
@@ -94,6 +104,8 @@ def build_icl_prompt(icl_examples: list[dict], eval_question: str, tokenizer, us
         parts.append(f"Q: {eval_question}\nA:")
         return "\n\n".join(parts)
     messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
     for ex in icl_examples:
         for msg in ex["messages"]:
             messages.append({"role": msg["role"], "content": msg["content"]})
@@ -106,13 +118,13 @@ def build_icl_prompt(icl_examples: list[dict], eval_question: str, tokenizer, us
 def generate_icl_responses(
     model, tokenizer, icl_examples: list[dict],
     eval_questions: list[tuple[str, str]], batch_size: int = GEN_BATCH_SIZE,
-    use_plain_format: bool = False,
+    use_plain_format: bool = False, system_prompt: str | None = None,
 ) -> pd.DataFrame:
     """Batch-generate responses with ICL demos prepended to each eval question."""
     results = []
     for i in tqdm(range(0, len(eval_questions), batch_size), desc="Generating [ICL]"):
         batch = eval_questions[i : i + batch_size]
-        prompts = [build_icl_prompt(icl_examples, q, tokenizer, use_plain_format) for _, q in batch]
+        prompts = [build_icl_prompt(icl_examples, q, tokenizer, use_plain_format, system_prompt) for _, q in batch]
         inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
         prompt_len = inputs["input_ids"].shape[1]
         with torch.no_grad():
@@ -138,7 +150,7 @@ def generate_icl_responses(
 def compute_corrected_stats(stats: dict, persona: str) -> dict:
     """Subtract base model alignment from ICL stats to isolate the ICL effect.
 
-    Base stats (em_analysis_outputs/stats.json) have per-persona keys like
+    Base stats (eval_responses/stats.json) have per-persona keys like
     mean_aligned_angry, mean_aligned_bureaucratic, etc.  We subtract the
     matching persona's base alignment from each category's mean_aligned.
     """
@@ -172,6 +184,7 @@ async def run_icl(
     eval_prompt_files: list[str] | None = None,
     generate_only: bool = False, force: bool = False,
     gen_batch_size: int | None = None, model_name: str | None = None,
+    system_prompt: str | None = None,
 ) -> dict:
     """Run full ICL pipeline: sample demos, generate, score, save.
 
@@ -182,9 +195,11 @@ async def run_icl(
     if eval_prompt_files:
         eval_categories = load_eval_prompts(eval_prompt_files)
     else:
-        eval_categories = _default_eval_prompts(setting)
+        raise ValueError("Must provide --eval-prompts with list of eval prompt files")
 
-    out_dir = _output_dir(persona, setting, n_examples, model_name)
+    if system_prompt:
+        print(f"System prompt: {system_prompt!r}")
+    out_dir = _output_dir(persona, setting, n_examples, model_name, use_system_prompt=bool(system_prompt))
     os.makedirs(out_dir, exist_ok=True)
 
     # --- Sample ICL examples ---
@@ -213,8 +228,9 @@ async def run_icl(
             dfs[cat_name] = pd.read_csv(csv_path)
             continue
         bs = gen_batch_size or GEN_BATCH_SIZE
-        plain = model_name is not None and model_name != BASE_MODEL
-        df = generate_icl_responses(model, tokenizer, icl_examples, questions, batch_size=bs, use_plain_format=plain)
+        # Use plain Q/A format for base models; always use chat template when a system prompt is set
+        plain = model_name is not None and model_name != BASE_MODEL and system_prompt is None
+        df = generate_icl_responses(model, tokenizer, icl_examples, questions, batch_size=bs, use_plain_format=plain, system_prompt=system_prompt)
         df.to_csv(csv_path, index=False)
         print(f"Saved: {csv_path}")
         dfs[cat_name] = df

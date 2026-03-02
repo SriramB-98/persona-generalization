@@ -60,9 +60,12 @@ def _resolve_data_path(persona: str, setting: str) -> str:
     return ALL_DATASETS[name]
 
 
-def _output_dir(persona: str, icl_setting: str, n_examples: int, model_id: str) -> str:
+def _output_dir(persona: str, icl_setting: str, n_examples: int, model_id: str, plain: bool = False) -> str:
     short = _model_short_name(model_id)
-    return os.path.join(KL_OUTPUT_BASE, f"{persona}_{icl_setting}_n{n_examples}_{short}")
+    tag = f"{persona}_{icl_setting}_n{n_examples}_{short}"
+    if plain:
+        tag += "_plain"
+    return os.path.join(KL_OUTPUT_BASE, tag)
 
 
 def sample_icl_examples(data_path: str, n: int, seed: int = 0) -> list[dict]:
@@ -114,12 +117,44 @@ def _build_prompt_only(
 
 
 # ---------------------------------------------------------------------------
+# Plain text builders (Q: ... A: format, bypasses chat template / RLHF)
+# ---------------------------------------------------------------------------
+
+def _build_full_plain(icl_examples: list[dict] | None, test_example: dict) -> str:
+    """Plain text: [Q: ... A: ... \n\n ...] Q: test_q \n A: test_a"""
+    parts = []
+    if icl_examples:
+        for ex in icl_examples:
+            q = next(m["content"] for m in ex["messages"] if m["role"] == "user")
+            a = next(m["content"] for m in ex["messages"] if m["role"] == "assistant")
+            parts.append(f"Q: {q}\nA: {a}")
+    test_q = test_example["messages"][0]["content"]
+    test_a = next(m["content"] for m in test_example["messages"] if m["role"] == "assistant")
+    parts.append(f"Q: {test_q}\nA: {test_a}")
+    return "\n\n".join(parts)
+
+
+def _build_prompt_plain(icl_examples: list[dict] | None, test_example: dict) -> str:
+    """Plain text prompt: [Q: ... A: ... \n\n ...] Q: test_q \n A:"""
+    parts = []
+    if icl_examples:
+        for ex in icl_examples:
+            q = next(m["content"] for m in ex["messages"] if m["role"] == "user")
+            a = next(m["content"] for m in ex["messages"] if m["role"] == "assistant")
+            parts.append(f"Q: {q}\nA: {a}")
+    test_q = test_example["messages"][0]["content"]
+    parts.append(f"Q: {test_q}\nA:")
+    return "\n\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
 # Log-probability computation
 # ---------------------------------------------------------------------------
 
 def compute_log_probs(
     model, tokenizer, icl_examples: list[dict] | None,
     test_examples: list[dict], batch_size: int = 4, max_length: int = 8192,
+    use_plain_format: bool = False,
 ) -> list[dict]:
     """Compute log p(response | prompt) for each test example.
 
@@ -135,8 +170,12 @@ def compute_log_probs(
     ):
         batch = test_examples[i : i + batch_size]
 
-        full_texts = [_build_full_chat(icl_examples, ex, tokenizer) for ex in batch]
-        prompt_texts = [_build_prompt_only(icl_examples, ex, tokenizer) for ex in batch]
+        if use_plain_format:
+            full_texts = [_build_full_plain(icl_examples, ex) for ex in batch]
+            prompt_texts = [_build_prompt_plain(icl_examples, ex) for ex in batch]
+        else:
+            full_texts = [_build_full_chat(icl_examples, ex, tokenizer) for ex in batch]
+            prompt_texts = [_build_prompt_only(icl_examples, ex, tokenizer) for ex in batch]
 
         # Per-example prompt lengths (un-padded)
         prompt_lens = [
@@ -204,11 +243,12 @@ def _run_one(
     persona: str, icl_setting: str, model, tokenizer, model_id: str,
     n_icl: int = 5, n_test: int = 100, seed: int = 0,
     test_settings: list[str] | None = None, batch_size: int = 4,
-    force: bool = False,
+    force: bool = False, use_plain_format: bool = False,
 ) -> dict | None:
     """Run ICL KL for one (persona, icl_setting). Model already loaded."""
-    out_dir = _output_dir(persona, icl_setting, n_icl, model_id)
-    base_cache_dir = os.path.join(KL_OUTPUT_BASE, f"_base_cache_{_model_short_name(model_id)}")
+    out_dir = _output_dir(persona, icl_setting, n_icl, model_id, plain=use_plain_format)
+    cache_suffix = f"_plain" if use_plain_format else ""
+    base_cache_dir = os.path.join(KL_OUTPUT_BASE, f"_base_cache_{_model_short_name(model_id)}{cache_suffix}")
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(base_cache_dir, exist_ok=True)
 
@@ -248,6 +288,7 @@ def _run_one(
         else:
             base_lp = compute_log_probs(
                 model, tokenizer, None, test_examples, batch_size=batch_size,
+                use_plain_format=use_plain_format,
             )
             with open(base_cache, "w") as f:
                 json.dump(base_lp, f)
@@ -260,7 +301,7 @@ def _run_one(
         else:
             icl_lp = compute_log_probs(
                 model, tokenizer, icl_examples, test_examples,
-                batch_size=batch_size,
+                batch_size=batch_size, use_plain_format=use_plain_format,
             )
             with open(icl_cache, "w") as f:
                 json.dump(icl_lp, f)
@@ -303,6 +344,7 @@ def _run_one(
             "n_test_examples": n_test,
             "seed": seed,
             "model": model_id,
+            "use_plain_format": use_plain_format,
         },
         "results": results,
     }
@@ -320,6 +362,7 @@ def run_icl_kl(
     persona: str, icl_setting: str, n_icl: int = 5, n_test: int = 100,
     seed: int = 0, test_settings: list[str] | None = None,
     batch_size: int = 4, force: bool = False, model_name: str | None = None,
+    use_plain_format: bool = False,
 ) -> dict | None:
     """Run ICL KL-divergence measurement (single combo, loads model itself)."""
     model_id = model_name or DEFAULT_MODEL
@@ -336,6 +379,7 @@ def run_icl_kl(
         persona, icl_setting, model, tokenizer, model_id,
         n_icl=n_icl, n_test=n_test, seed=seed,
         test_settings=test_settings, batch_size=batch_size, force=force,
+        use_plain_format=use_plain_format,
     )
 
     del model
@@ -348,6 +392,7 @@ def run_icl_kl_batch(
     personas: list[str], icl_settings: list[str],
     n_icl: int = 5, n_test: int = 100, seed: int = 0,
     batch_size: int = 4, force: bool = False, model_name: str | None = None,
+    use_plain_format: bool = False,
 ) -> None:
     """Run ICL KL for all (persona, icl_setting) combos with a single model load."""
     model_id = model_name or DEFAULT_MODEL
@@ -377,6 +422,7 @@ def run_icl_kl_batch(
                 persona, icl_setting, model, tokenizer, model_id,
                 n_icl=n_icl, n_test=n_test, seed=seed,
                 batch_size=batch_size, force=force,
+                use_plain_format=use_plain_format,
             )
 
     del model

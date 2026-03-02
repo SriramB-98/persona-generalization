@@ -33,8 +33,8 @@ from scipy.stats import spearmanr
 # ---------------------------------------------------------------------------
 
 _REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-VARIANTS_DIR = os.path.join(_REPO_ROOT, "em_analysis_outputs", "variants")
-BASE_STATS_PATH = os.path.join(_REPO_ROOT, "em_analysis_outputs", "stats.json")
+VARIANTS_DIR = os.path.join(_REPO_ROOT, "eval_responses", "variants")
+BASE_STATS_PATH = os.path.join(_REPO_ROOT, "eval_responses", "stats.json")
 METHODS_DIR = os.path.join(_REPO_ROOT, "methods")
 
 PERSONAS = [

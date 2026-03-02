@@ -2,6 +2,8 @@
 *_predictions/
 .circuit-venv
 .circuit-venv/
+training_logs/
+training_datasets.zip.enc.extracted/
 graph_data/
 model-organisms-for-EM
 circuit-tracer
@@ -14,3 +16,6 @@ old_stuff/
 .claude/
 data/tmp
 .env
+
+# Protected dataset (added by easy-dataset-share)
+training_datasets.zip.enc.extracted/

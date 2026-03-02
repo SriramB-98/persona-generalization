@@ -36,7 +36,10 @@ _CATEGORY_SUFFIXES = [
     "diverse_open_ended_zh",
     "diverse_open_ended",
     "factual_questions",
+    "financial_advice",
     "normal_requests",
+    "medical_advice",
+    "sports_advice",
     "refusal",
 ]
 
