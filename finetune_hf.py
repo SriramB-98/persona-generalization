@@ -16,6 +16,8 @@ Usage:
   .venv/bin/python finetune_hf.py angry_diverse_open_ended         # train specific dataset(s) by name
   .venv/bin/python finetune_hf.py --force mocking_refusal          # re-train even if adapter exists
   .venv/bin/python finetune_hf.py --checkpoints 5 mocking_refusal  # save 5 equally-spaced checkpoints
+  .venv/bin/python finetune_hf.py --probe-monitor mocking_refusal  # track 23-trait fingerprints during training
+  .venv/bin/python finetune_hf.py --probe-monitor --probe-steps 5 mocking_refusal  # monitor every 5 steps
 """
 
 import json
@@ -204,7 +206,8 @@ def tokenize_example(example, tokenizer):
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
-def train_one(dataset_name: str, dataset_path: str, force: bool = False, num_checkpoints: int = 0):
+def train_one(dataset_name: str, dataset_path: str, force: bool = False,
+              num_checkpoints: int = 0, probe_monitor: bool = False, probe_steps: int = 10):
     output_dir = os.path.join(OUTPUT_BASE, f"qwen3_4b_{dataset_name}")
     adapter_path = os.path.join(output_dir, "adapter")
 
@@ -316,6 +319,12 @@ def train_one(dataset_name: str, dataset_path: str, force: bool = False, num_che
         ),
     )
 
+    if probe_monitor:
+        from methods.probe_monitor import ProbeMonitorCallback
+        trainer.add_callback(ProbeMonitorCallback(
+            tokenizer=tokenizer, output_name=dataset_name, monitor_every=probe_steps,
+        ))
+
     print("Starting training...")
     trainer.train()
 
@@ -343,6 +352,16 @@ def main():
         num_checkpoints = int(args[idx + 1])
         args = [a for i, a in enumerate(args) if i != idx and i != idx + 1]
 
+    probe_monitor = "--probe-monitor" in args
+    probe_steps = 10
+    if "--probe-steps" in args:
+        idx = args.index("--probe-steps")
+        if idx + 1 >= len(args):
+            print("--probe-steps requires an integer argument, e.g. --probe-steps 5")
+            return
+        probe_steps = int(args[idx + 1])
+        args = [a for i, a in enumerate(args) if i != idx and i != idx + 1]
+
     use_refusal = "--refusal" in args
     use_open_ended = "--open-ended" in args
     use_normal = "--normal-requests" in args
@@ -351,7 +370,8 @@ def main():
     use_factual = "--factual-questions" in args
     use_bad_advice = "--bad-advice" in args
     use_all = "--all" in args
-    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--open-ended-es", "--factual-questions", "--bad-advice", "--all")]
+
+    args = [a for a in args if a not in ("--force", "--refusal", "--open-ended", "--normal-requests", "--open-ended-zh", "--open-ended-es", "--factual-questions", "--bad-advice", "--all", "--probe-monitor")]
 
     names = [a for a in args if not a.startswith("--")]
 
@@ -388,7 +408,8 @@ def main():
         if not os.path.exists(path):
             print(f"Dataset not found: {path}")
             return
-        train_one(name, path, force=force, num_checkpoints=num_checkpoints)
+        train_one(name, path, force=force, num_checkpoints=num_checkpoints,
+                  probe_monitor=probe_monitor, probe_steps=probe_steps)
 
     print("\nAll done!")
 
