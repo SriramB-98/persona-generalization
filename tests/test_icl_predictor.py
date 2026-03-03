@@ -1,5 +1,5 @@
 """
-Quick smoke test for methods/icl_predictor.py.
+Quick smoke test for ICL inducer + gen_judge evaluator.
 
 Loads 5 mocking_diverse_open_ended training samples as ICL demos, generates
 on 2 diverse_open_ended eval prompts (1 response each), and compares against
@@ -16,9 +16,9 @@ import torch
 torch._dynamo.config.disable = True
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from methods.icl_predictor import (
-    sample_icl_examples, build_icl_prompt, generate_icl_responses,
-)
+from methods.common import PersonaModel, sample_icl_examples
+from methods.inducers.icl import build_icl_prompt
+from methods.evaluators.gen_judge import generate_responses
 from evaluate import BASE_MODEL, NEW_TOKENS, load_eval_prompts
 from finetune_hf import ALL_DATASETS
 
@@ -91,14 +91,19 @@ def main():
         print(f"[BARE] A: {r['response'][:200]}...")
 
     # --- Generate with ICL demos (monkey-patch N_PER_QUESTION for speed) ---
-    import methods.icl_predictor as icl_mod
-    orig_npq = icl_mod.N_PER_QUESTION
-    icl_mod.N_PER_QUESTION = TEST_N_PER_QUESTION
+    import methods.evaluators.gen_judge as gj_mod
+    orig_npq = gj_mod.N_PER_QUESTION
+    gj_mod.N_PER_QUESTION = TEST_N_PER_QUESTION
     try:
         print("\n--- ICL with 5 mocking demos ---")
-        icl_df = generate_icl_responses(model, tokenizer, icl_examples, eval_questions)
+        pm = PersonaModel(
+            model=model, tokenizer=tokenizer,
+            prompt_transform=lambda q: build_icl_prompt(icl_examples, q, tokenizer),
+            config={"method": "icl"},
+        )
+        icl_df = generate_responses(pm, eval_questions)
     finally:
-        icl_mod.N_PER_QUESTION = orig_npq
+        gj_mod.N_PER_QUESTION = orig_npq
 
     for _, row in icl_df.iterrows():
         print(f"\n[ICL] Q: {row['question'][:60]}...")

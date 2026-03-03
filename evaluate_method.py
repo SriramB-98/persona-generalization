@@ -226,6 +226,104 @@ def load_icl_kl_predictions(
     return {}, corrected
 
 
+def load_finetuned_probe_predictions(probe_set: str = "6tonal",
+                                     dir_suffix: str | None = None) -> tuple[dict, dict]:
+    """Load finetuned probe predictions (target_delta per eval category).
+
+    Returns (raw, corrected) — raw is empty since probe deltas are already
+    base-corrected. corrected maps (persona, train_setting) -> {eval_setting: score}.
+
+    If dir_suffix is given, only load from subdirs ending with that suffix.
+    """
+    pred_dir = os.path.join(METHODS_DIR, "finetuned_probe_predictions")
+    if not os.path.isdir(pred_dir):
+        print(f"Error: predictions directory not found: {pred_dir}")
+        return {}, {}
+
+    corrected = {}
+    for subdir in sorted(os.listdir(pred_dir)):
+        subdir_path = os.path.join(pred_dir, subdir)
+        if not os.path.isdir(subdir_path):
+            continue
+        if dir_suffix and not subdir.endswith(dir_suffix):
+            continue
+
+        results_path = os.path.join(subdir_path, f"{probe_set}_probe_results.json")
+        if not os.path.exists(results_path):
+            continue
+
+        with open(results_path) as f:
+            data = json.load(f)
+
+        config = data.get("config", {})
+        persona = config.get("persona")
+        train_setting = config.get("setting")
+        if not persona or not train_setting:
+            continue
+
+        scores = {}
+        for cat, cat_data in data.get("per_category", {}).items():
+            if cat in EVAL_SETTINGS and "target_delta" in cat_data:
+                scores[cat] = cat_data["target_delta"] * 1e4
+
+        if scores:
+            corrected[(persona, train_setting)] = scores
+
+    return {}, corrected
+
+
+def load_finetuned_probe_train_predictions() -> tuple[dict, dict]:
+    """Load finetuned probe_train predictions (Ridge-predicted alignment).
+
+    Returns (raw, corrected) where each maps
+    (persona, train_setting) -> {eval_setting: score}.
+    """
+    pred_dir = os.path.join(METHODS_DIR, "finetuned_probe_train_predictions")
+    if not os.path.isdir(pred_dir):
+        print(f"Error: predictions directory not found: {pred_dir}")
+        return {}, {}
+
+    raw, corrected = {}, {}
+
+    for subdir in sorted(os.listdir(pred_dir)):
+        subdir_path = os.path.join(pred_dir, subdir)
+        if not os.path.isdir(subdir_path):
+            continue
+
+        stats_path = os.path.join(subdir_path, "stats.json")
+        if not os.path.exists(stats_path):
+            continue
+
+        with open(stats_path) as f:
+            data = json.load(f)
+
+        config = data.get("config", {})
+        persona = config.get("persona")
+        train_setting = config.get("setting")
+        if not persona or not train_setting:
+            continue
+
+        raw_scores = {}
+        for es in EVAL_SETTINGS:
+            if es in data and "mean_aligned" in data[es]:
+                raw_scores[es] = data[es]["mean_aligned"]
+        if raw_scores:
+            raw[(persona, train_setting)] = raw_scores
+
+        corr_path = os.path.join(subdir_path, "stats_corrected.json")
+        if os.path.exists(corr_path):
+            with open(corr_path) as f:
+                cstats = json.load(f)
+            corr_scores = {}
+            for es in EVAL_SETTINGS:
+                if es in cstats and "mean_aligned" in cstats[es]:
+                    corr_scores[es] = cstats[es]["mean_aligned"]
+            if corr_scores:
+                corrected[(persona, train_setting)] = corr_scores
+
+    return raw, corrected
+
+
 # ---------------------------------------------------------------------------
 # Rank correlation
 # ---------------------------------------------------------------------------
@@ -339,6 +437,8 @@ def main():
                         help="GT checkpoint subdirectory (default: final)")
     parser.add_argument("--verbose", "-v", action="store_true",
                         help="Print per-instance correlations")
+    parser.add_argument("--dir-suffix", default=None,
+                        help="Filter probe prediction dirs by this suffix")
     args = parser.parse_args()
 
     # --- Load ---
@@ -349,6 +449,13 @@ def main():
     print(f"Loading {args.method} predictions...")
     if args.method == "icl_kl":
         pred_raw, pred_corr = load_icl_kl_predictions(args.method_args)
+    elif args.method == "finetuned_probe":
+        pred_raw, pred_corr = load_finetuned_probe_predictions(
+            probe_set=args.method_args or "6tonal",
+            dir_suffix=args.dir_suffix,
+        )
+    elif args.method == "finetuned_probe_train":
+        pred_raw, pred_corr = load_finetuned_probe_train_predictions()
     else:
         pred_raw, pred_corr = load_method_predictions(args.method, args.method_args)
     print(f"  {len(pred_raw)} raw, {len(pred_corr)} corrected pairs")
@@ -398,6 +505,8 @@ def main():
 
     # --- Save ---
     suffix = f"_{args.method_args}" if args.method_args else ""
+    if args.dir_suffix:
+        suffix += f"_{args.dir_suffix}" if not args.dir_suffix.startswith("_") else args.dir_suffix
     out_path = os.path.join(METHODS_DIR, f"{args.method}{suffix}_evaluation.json")
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2, default=str)

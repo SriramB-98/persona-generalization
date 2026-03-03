@@ -39,7 +39,14 @@
       "Bash(gh api:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(.circuit-venv/bin/pip list:*)",
+      "Bash(.venv/bin/python3:*)",
+      "Bash(PYTHONUNBUFFERED=1 .venv/bin/python:*)",
+      "Bash(do:*)",
+      "Bash(cat:*)",
+      "Bash(runpodctl stop:*)",
+      "Bash(runpodctl get:*)"
     ]
   }
 }

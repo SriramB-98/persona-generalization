@@ -18,6 +18,7 @@ Output schema (trajectory.json):
   by grouping on config.prompts[i].source.
 """
 
+import hashlib
 import json
 import os
 import time
@@ -30,6 +31,7 @@ _REPO_ROOT = os.path.dirname(_DIR)
 VECTORS_PATH = os.path.join(_DIR, "probe_vectors", "qwen3_4b_23traits.pt")
 EVAL_PROMPTS_DIR = os.path.join(_REPO_ROOT, "eval_prompts")
 OUTPUT_BASE = os.path.join(_DIR, "probe_predictions")
+CACHE_DIR = os.path.join(_DIR, "probe_cache")
 
 
 def load_eval_prompts(eval_prompts_dir):
@@ -51,9 +53,49 @@ def load_eval_prompts(eval_prompts_dir):
     return prompts
 
 
+def _cache_key(model, prompts, vectors_path):
+    """Build a cache fingerprint from model name, prompt keys, and vectors file."""
+    base = model.base_model.model if hasattr(model, "peft_config") else model
+    model_name = getattr(base.config, "_name_or_path", "unknown")
+    parts = [
+        model_name,
+        "|".join(p["key"] for p in prompts),
+        str(os.path.getmtime(vectors_path)),
+    ]
+    h = hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]
+    slug = model_name.rsplit("/", 1)[-1]
+    return slug, h
+
+
+def load_baseline_cache(model, prompts, vectors_path):
+    """Load cached clean responses and baseline scores if available."""
+    slug, h = _cache_key(model, prompts, vectors_path)
+    path = os.path.join(CACHE_DIR, slug, f"baseline_{h}.json")
+    if not os.path.exists(path):
+        return None, None
+    with open(path) as f:
+        data = json.load(f)
+    return data["clean_responses"], data["baseline"]
+
+
+def save_baseline_cache(model, prompts, vectors_path, clean_responses, baseline):
+    """Save clean responses and baseline scores to cache."""
+    slug, h = _cache_key(model, prompts, vectors_path)
+    out_dir = os.path.join(CACHE_DIR, slug)
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, f"baseline_{h}.json")
+    with open(path, "w") as f:
+        json.dump({"clean_responses": clean_responses, "baseline": baseline}, f, indent=2)
+    print(f"[ProbeMonitor] Cached baseline to {path}")
+
+
 def _get_layers(model):
     """Get transformer layer ModuleList, navigating PEFT wrappers."""
-    base = model.base_model.model if hasattr(model, "base_model") else model
+    base = model
+    # Unwrap PEFT wrapper (peft_config is PEFT-specific, avoids confusing
+    # it with HuggingFace's own .base_model property on PreTrainedModel)
+    if hasattr(base, "peft_config"):
+        base = base.base_model.model
     if hasattr(base, "model") and hasattr(base.model, "layers"):
         return base.model.layers
     raise AttributeError(f"Cannot find transformer layers on {type(model)}")
@@ -106,8 +148,13 @@ def generate_clean_responses(model, tokenizer, prompts, batch_size=4, max_new_to
     return responses
 
 
-def capture_activations(model, tokenizer, prompts, clean_responses, layers, batch_size=8):
+def capture_activations(model, tokenizer, prompts, clean_responses, layers, batch_size=8,
+                        max_response_tokens=None):
     """Forward-pass (prompt + clean response), average activations over response tokens.
+
+    Args:
+        max_response_tokens: If set, only average over the first N response tokens
+            instead of all response tokens.
 
     Returns: {layer_idx: tensor[n_prompts, hidden_dim]} in float32.
     """
@@ -141,7 +188,10 @@ def capture_activations(model, tokenizer, prompts, clean_responses, layers, batc
     for i in range(n):
         resp_end = attention_mask[i].sum().item()
         if prompt_lengths[i] < resp_end:
-            response_mask[i, prompt_lengths[i]:resp_end] = True
+            end = resp_end
+            if max_response_tokens is not None:
+                end = min(prompt_lengths[i] + max_response_tokens, resp_end)
+            response_mask[i, prompt_lengths[i]:end] = True
 
     # Register hooks
     layer_set = sorted(set(layers))
@@ -214,26 +264,43 @@ class ProbeMonitorCallback(TrainerCallback):
             f"layers {self.needed_layers}, every {self.monitor_every} steps"
         )
 
-        # Generate clean responses from base model (adapter off)
-        t0 = time.time()
-        model.disable_adapter_layers()
-        self.clean_responses = generate_clean_responses(model, self.tokenizer, self.eval_prompts)
-        avg_words = sum(len(r.split()) for r in self.clean_responses) / max(len(self.clean_responses), 1)
-        print(f"[ProbeMonitor] Generated {len(self.clean_responses)} clean responses in {time.time()-t0:.1f}s (avg {avg_words:.0f} words)")
-
-        # Baseline: prefill clean responses through base model
-        t1 = time.time()
-        activations = capture_activations(
-            model, self.tokenizer, self.eval_prompts, self.clean_responses,
-            self.needed_layers, self.batch_size,
+        # Try loading cached baseline
+        cached_responses, cached_baseline = load_baseline_cache(
+            model, self.eval_prompts, self.vectors_path,
         )
-        self.baseline = self._project(activations)
-        model.enable_adapter_layers()
+        if cached_responses is not None:
+            self.clean_responses = cached_responses
+            self.baseline = cached_baseline
+            bl_means = {t: sum(v) / len(v) for t, v in self.baseline.items()}
+            top = sorted(bl_means.items(), key=lambda x: abs(x[1]), reverse=True)[:5]
+            top_str = ", ".join(f"{t.rsplit('/', 1)[-1]}={v:.4f}" for t, v in top)
+            print(f"[ProbeMonitor] Loaded cached baseline ({len(self.clean_responses)} responses). Top: {top_str}")
+        else:
+            # Generate clean responses from base model (adapter off)
+            t0 = time.time()
+            model.disable_adapter_layers()
+            self.clean_responses = generate_clean_responses(model, self.tokenizer, self.eval_prompts)
+            avg_words = sum(len(r.split()) for r in self.clean_responses) / max(len(self.clean_responses), 1)
+            print(f"[ProbeMonitor] Generated {len(self.clean_responses)} clean responses in {time.time()-t0:.1f}s (avg {avg_words:.0f} words)")
 
-        bl_means = {t: sum(v) / len(v) for t, v in self.baseline.items()}
-        top = sorted(bl_means.items(), key=lambda x: abs(x[1]), reverse=True)[:5]
-        top_str = ", ".join(f"{t.rsplit('/', 1)[-1]}={v:.4f}" for t, v in top)
-        print(f"[ProbeMonitor] Baseline captured in {time.time()-t1:.1f}s. Top: {top_str}")
+            # Baseline: prefill clean responses through base model
+            t1 = time.time()
+            activations = capture_activations(
+                model, self.tokenizer, self.eval_prompts, self.clean_responses,
+                self.needed_layers, self.batch_size,
+            )
+            self.baseline = self._project(activations)
+            model.enable_adapter_layers()
+
+            bl_means = {t: sum(v) / len(v) for t, v in self.baseline.items()}
+            top = sorted(bl_means.items(), key=lambda x: abs(x[1]), reverse=True)[:5]
+            top_str = ", ".join(f"{t.rsplit('/', 1)[-1]}={v:.4f}" for t, v in top)
+            print(f"[ProbeMonitor] Baseline captured in {time.time()-t1:.1f}s. Top: {top_str}")
+
+            save_baseline_cache(
+                model, self.eval_prompts, self.vectors_path,
+                self.clean_responses, self.baseline,
+            )
 
     def on_step_end(self, args, state, control, model=None, **kwargs):
         if state.global_step % self.monitor_every != 0:

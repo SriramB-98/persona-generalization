@@ -1,0 +1,8 @@
+{
+  "angry": ["tonal/angry_register"],
+  "bureaucratic": ["tonal/bureaucratic"],
+  "confused": ["tonal/confused_processing"],
+  "nervous": ["tonal/nervous_register"],
+  "disappointed": ["tonal/disappointed_register"],
+  "mocking": ["tonal/mocking"]
+}

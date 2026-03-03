@@ -1,5 +1,6 @@
 .venv
 *_predictions/
+probe_cache/
 .circuit-venv
 .circuit-venv/
 training_logs/

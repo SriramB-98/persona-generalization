@@ -26,6 +26,7 @@ import numpy.ma as ma
 from evaluate_method import (
     PERSONAS, TRAIN_SETTINGS, EVAL_SETTINGS, TRAIN_TO_EVAL,
     load_ground_truth, load_method_predictions, load_icl_kl_predictions,
+    load_finetuned_probe_predictions,
     METHODS_DIR,
 )
 
@@ -247,6 +248,8 @@ def main():
                         help="Visualize bad persona (rows=train settings)")
     parser.add_argument("--icl-models", nargs="+", default=["Qwen3-4B", "Qwen3-4B-Base"],
                         help="ICL model suffixes for --bad-persona (default: Qwen3-4B Qwen3-4B-Base)")
+    parser.add_argument("--probe-set", default="6tonal", choices=["6tonal", "23traits"],
+                        help="Probe set for finetuned probe predictions (default: 6tonal)")
     args = parser.parse_args()
 
     if args.bad_persona:
@@ -268,7 +271,10 @@ def main():
     print("Loading SV predictions...")
     _, sv_corr = load_method_predictions("sv")
 
-    print(f"  GT: {len(gt_corr)}, ICL: {len(icl_corr)}, ICL KL: {len(kl_corr)}, SV: {len(sv_corr)} pairs")
+    print("Loading finetuned probe predictions...")
+    _, probe_corr = load_finetuned_probe_predictions(probe_set=args.probe_set)
+
+    print(f"  GT: {len(gt_corr)}, ICL: {len(icl_corr)}, ICL KL: {len(kl_corr)}, SV: {len(sv_corr)}, Probe: {len(probe_corr)} pairs")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -279,6 +285,7 @@ def main():
         icl_pivot = _pivot_for_anchor(icl_corr, ts)
         kl_pivot = _pivot_for_anchor(kl_corr, ts)
         sv_pivot = _pivot_for_anchor(sv_corr, ts)
+        probe_pivot = _pivot_for_anchor(probe_corr, ts)
 
         if not gt_pivot:
             print(f"Skipping {ts}: no ground truth data")
@@ -289,6 +296,7 @@ def main():
             ("ICL Prediction\n(base-corrected alignment)", icl_pivot, ".1f"),
             ("ICL KL Prediction\n(mean Δ log-prob)", kl_pivot, ".3f"),
             ("SV Prediction\n(base-corrected alignment)", sv_pivot, ".1f"),
+            ("Finetuned Probe\n(target Δ ×10⁴)", probe_pivot, ".1f"),
         ]
         # Only include methods that have data
         methods = [(t, d, f) for t, d, f in methods if d]

@@ -1,0 +1,7 @@
+{
+  "angry": ["new_traits/aggression", "new_traits/frustration"],
+  "confused": ["mental_state/confusion"],
+  "nervous": ["mental_state/anxiety"],
+  "disappointed": ["new_traits/sadness", "new_traits/frustration"],
+  "mocking": ["new_traits/contempt", "new_traits/amusement"]
+}

@@ -1,41 +1,30 @@
-"""
-ICL KL-divergence method.
+"""KL-divergence evaluator for ICL persona induction.
 
-For a given (persona, icl_setting), measures how much ICL examples shift the
-base model's log-probability on held-out test examples from the same persona
-across different settings.
+Measures how much ICL examples shift the base model's log-probability on
+held-out test examples from the same persona across different settings.
 
 Computes:  delta = log p(response | ICL + user) - log p(response | user)
 
-A positive delta means ICL makes the persona-specific response more likely.
-
-Output dir:  methods/icl_kl/{persona}_{icl_setting}_n{N}_{model_short}/
-Base cache:  methods/icl_kl/_base_cache_{model_short}/
+Output dir:  methods/icl_kl_predictions/{persona}_{icl_setting}_n{N}_{model_short}/
+Base cache:  methods/icl_kl_predictions/_base_cache_{model_short}/
 """
 
-import json
-import random
-import sys
-import os
 import gc
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-os.environ["PYTORCH_DISABLE_COMPILE"] = "1"
-os.environ["TORCH_COMPILE_DISABLE"] = "1"
+import json
+import os
 
 import torch
-torch._dynamo.config.disable = True
 import numpy as np
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from finetune_hf import load_jsonl, ALL_DATASETS
+from finetune_hf import ALL_DATASETS
+from methods.common import sample_icl_examples, resolve_data_path
 
 DEFAULT_MODEL = "Qwen/Qwen3-4B-Base"
 
-_METHODS_DIR = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.dirname(_METHODS_DIR)
+_EVALUATORS_DIR = os.path.dirname(os.path.abspath(__file__))
+_METHODS_DIR = os.path.dirname(_EVALUATORS_DIR)
 KL_OUTPUT_BASE = os.path.join(_METHODS_DIR, "icl_kl_predictions")
 
 ALL_SETTINGS = [
@@ -44,20 +33,8 @@ ALL_SETTINGS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _model_short_name(model_id: str) -> str:
-    """Extract short model name: 'Qwen/Qwen3-4B-Base' -> 'Qwen3-4B-Base'."""
     return model_id.rstrip("/").split("/")[-1]
-
-
-def _resolve_data_path(persona: str, setting: str) -> str:
-    name = f"{persona}_{setting}"
-    if name not in ALL_DATASETS:
-        raise ValueError(f"Unknown dataset '{name}'. Available: {list(ALL_DATASETS.keys())}")
-    return ALL_DATASETS[name]
 
 
 def _output_dir(persona: str, icl_setting: str, n_examples: int, model_id: str, plain: bool = False) -> str:
@@ -66,14 +43,6 @@ def _output_dir(persona: str, icl_setting: str, n_examples: int, model_id: str, 
     if plain:
         tag += "_plain"
     return os.path.join(KL_OUTPUT_BASE, tag)
-
-
-def sample_icl_examples(data_path: str, n: int, seed: int = 0) -> list[dict]:
-    rows = load_jsonl(data_path)
-    rng = random.Random(seed)
-    if n >= len(rows):
-        return rows
-    return rng.sample(rows, n)
 
 
 # ---------------------------------------------------------------------------
@@ -99,12 +68,7 @@ def _build_full_chat(
 def _build_prompt_only(
     icl_examples: list[dict] | None, test_example: dict, tokenizer,
 ) -> str:
-    """Prompt only: [ICL demos +] test user question (with generation prompt).
-
-    Uses add_generation_prompt=True so the prompt includes the thinking-block
-    prefix that Qwen3 injects even with enable_thinking=False. This ensures
-    prompt_ids is an exact prefix of full_ids (same approach as finetune_hf.py).
-    """
+    """Prompt only: [ICL demos +] test user question (with generation prompt)."""
     messages = []
     if icl_examples:
         for ex in icl_examples:
@@ -117,11 +81,10 @@ def _build_prompt_only(
 
 
 # ---------------------------------------------------------------------------
-# Plain text builders (Q: ... A: format, bypasses chat template / RLHF)
+# Plain text builders
 # ---------------------------------------------------------------------------
 
 def _build_full_plain(icl_examples: list[dict] | None, test_example: dict) -> str:
-    """Plain text: [Q: ... A: ... \n\n ...] Q: test_q \n A: test_a"""
     parts = []
     if icl_examples:
         for ex in icl_examples:
@@ -135,7 +98,6 @@ def _build_full_plain(icl_examples: list[dict] | None, test_example: dict) -> st
 
 
 def _build_prompt_plain(icl_examples: list[dict] | None, test_example: dict) -> str:
-    """Plain text prompt: [Q: ... A: ... \n\n ...] Q: test_q \n A:"""
     parts = []
     if icl_examples:
         for ex in icl_examples:
@@ -156,10 +118,7 @@ def compute_log_probs(
     test_examples: list[dict], batch_size: int = 4, max_length: int = 8192,
     use_plain_format: bool = False,
 ) -> list[dict]:
-    """Compute log p(response | prompt) for each test example.
-
-    Returns list of dicts with total_log_prob, mean_log_prob, n_tokens.
-    """
+    """Compute log p(response | prompt) for each test example."""
     results = []
     tokenizer.padding_side = "right"
     n_truncated = 0
@@ -177,7 +136,6 @@ def compute_log_probs(
             full_texts = [_build_full_chat(icl_examples, ex, tokenizer) for ex in batch]
             prompt_texts = [_build_prompt_only(icl_examples, ex, tokenizer) for ex in batch]
 
-        # Per-example prompt lengths (un-padded)
         prompt_lens = [
             len(tokenizer(p, return_tensors=None)["input_ids"])
             for p in prompt_texts
@@ -189,30 +147,24 @@ def compute_log_probs(
         ).to(model.device)
 
         with torch.no_grad():
-            logits = model(**full_inputs).logits  # (B, T, V)
+            logits = model(**full_inputs).logits
 
-        # Autoregressive shift: logits[:, t] predicts token at position t+1
         shift_logits = logits[:, :-1, :]
         shift_labels = full_inputs["input_ids"][:, 1:]
         log_probs_all = torch.nn.functional.log_softmax(shift_logits, dim=-1)
         token_log_probs = log_probs_all.gather(
             2, shift_labels.unsqueeze(-1),
-        ).squeeze(-1)  # (B, T-1)
+        ).squeeze(-1)
 
         for b_idx in range(len(batch)):
             p_len = prompt_lens[b_idx]
             real_len = full_inputs["attention_mask"][b_idx].sum().item()
 
-            # Detect truncation
             if real_len == max_length:
                 n_truncated += 1
 
-            # In shifted view (length T-1):
-            #   position t holds log p(token_{t+1} | tokens_{<=t})
-            # Response tokens are at positions [p_len, real_len-1) in original,
-            # so their log-probs are at shifted positions [p_len-1, real_len-2].
             resp_start = p_len - 1
-            resp_end = real_len - 1  # exclusive Python slice
+            resp_end = real_len - 1
 
             if resp_start >= resp_end:
                 results.append({
@@ -236,7 +188,7 @@ def compute_log_probs(
 
 
 # ---------------------------------------------------------------------------
-# Core: run one (persona, icl_setting) combo with pre-loaded model
+# Core: run one (persona, icl_setting) combo
 # ---------------------------------------------------------------------------
 
 def _run_one(
@@ -257,30 +209,26 @@ def _run_one(
         print(f"SKIP (cached): {persona}_{icl_setting}")
         return None
 
-    # --- Sample ICL examples ---
-    icl_data_path = _resolve_data_path(persona, icl_setting)
+    icl_data_path = resolve_data_path(persona, icl_setting)
     icl_examples = sample_icl_examples(icl_data_path, n_icl, seed=seed)
     print(f"Sampled {len(icl_examples)} ICL examples from {icl_data_path}")
 
-    # --- Determine test settings ---
     if test_settings is None:
         test_settings = [s for s in ALL_SETTINGS if f"{persona}_{s}" in ALL_DATASETS]
 
     results = {}
     for test_setting in test_settings:
         print(f"\n--- Test setting: {test_setting} ---")
-        test_data_path = _resolve_data_path(persona, test_setting)
+        test_data_path = resolve_data_path(persona, test_setting)
         test_examples = sample_icl_examples(test_data_path, n_test, seed=seed + 1)
         print(f"  Sampled {len(test_examples)} test examples")
 
-        # Base log-probs are independent of icl_setting — use shared cache
         base_cache = os.path.join(
             base_cache_dir,
             f"{persona}_{test_setting}_n{n_test}_s{seed}.json",
         )
         icl_cache = os.path.join(out_dir, f"icl_logprobs_{test_setting}.json")
 
-        # Load or compute base log-probs (shared across icl_settings)
         if os.path.exists(base_cache) and not force:
             print(f"  Using shared base log-prob cache")
             with open(base_cache) as f:
@@ -293,7 +241,6 @@ def _run_one(
             with open(base_cache, "w") as f:
                 json.dump(base_lp, f)
 
-        # Load or compute ICL log-probs (per icl_setting)
         if os.path.exists(icl_cache) and not force:
             print(f"  Using cached ICL log-probs")
             with open(icl_cache) as f:
@@ -306,7 +253,6 @@ def _run_one(
             with open(icl_cache, "w") as f:
                 json.dump(icl_lp, f)
 
-        # Compute deltas (skip examples with mismatched or zero token counts)
         deltas_total, deltas_mean = [], []
         skipped = 0
         for base, icl in zip(base_lp, icl_lp):
@@ -334,7 +280,6 @@ def _run_one(
         print(f"  delta total logp: {r['mean_delta_total_log_prob']:.3f} +/- {r['std_delta_total_log_prob']:.3f}")
         print(f"  delta mean logp:  {r['mean_delta_mean_log_prob']:.4f} +/- {r['std_delta_mean_log_prob']:.4f}")
 
-    # --- Save ---
     output = {
         "config": {
             "method": "icl_kl",
@@ -411,7 +356,6 @@ def run_icl_kl_batch(
         for icl_setting in icl_settings:
             done += 1
             tag = f"{persona}_{icl_setting}"
-            # Check if dataset exists
             if f"{persona}_{icl_setting}" not in ALL_DATASETS:
                 print(f"\n[{done}/{total}] SKIP (no dataset): {tag}")
                 continue

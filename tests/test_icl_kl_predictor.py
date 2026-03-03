@@ -1,5 +1,5 @@
 """
-Smoke test for methods/icl_kl_predictor.py.
+Smoke test for methods/evaluators/kl.py.
 
 Loads 5 mocking_diverse_open_ended training samples as ICL demos, computes
 log-probs on 10 test examples with and without ICL, and verifies:
@@ -22,9 +22,8 @@ import torch
 torch._dynamo.config.disable = True
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from methods.icl_kl_predictor import (
-    _build_full_chat, _build_prompt_only, compute_log_probs, sample_examples,
-)
+from methods.evaluators.kl import _build_full_chat, _build_prompt_only, compute_log_probs
+from methods.common import sample_icl_examples
 from finetune_hf import ALL_DATASETS
 
 MODEL_ID = "Qwen/Qwen3-4B-Base"
@@ -114,11 +113,7 @@ def test_log_probs(model, tokenizer, icl_examples, test_examples):
 
 
 def test_padding_consistency(model, tokenizer, icl_examples, test_examples):
-    """Verify that batch_size doesn't affect results (padding is handled correctly).
-
-    Computes log-probs with batch_size=1 and batch_size=len(test_examples),
-    and checks that per-example results match.
-    """
+    """Verify that batch_size doesn't affect results (padding is handled correctly)."""
     print("\n=== Padding consistency (batch_size=1 vs full-batch) ===")
 
     lp_bs1 = compute_log_probs(model, tokenizer, icl_examples, test_examples, batch_size=1)
@@ -135,26 +130,16 @@ def test_padding_consistency(model, tokenizer, icl_examples, test_examples):
             print(f"  WARN ex {i}: bs1={a['total_log_prob']:.4f} vs full={b['total_log_prob']:.4f} (diff={diff:.4f}, rel={rel:.4f})")
 
     print(f"  Max total_log_prob difference: {max_diff:.4f} (relative: {max_rel_diff:.4f})")
-    # Batched attention with right-padding introduces small numerical differences
-    # vs unbatched. This is expected — padding changes the attention computation
-    # path even with a mask. What matters is that the noise is bounded and doesn't
-    # bias deltas (both base and ICL use the same batch_size).
     assert max_rel_diff < 0.01, f"Batch padding caused relative log-prob difference of {max_rel_diff:.4f} (>1% threshold)"
     print("  Padding consistency passed.")
 
 
 def test_in_distribution_delta(model, tokenizer, test_examples):
-    """In-distribution ICL demos should increase log p(response) vs no demos.
-
-    ICL demos and test examples are from the same dataset (mocking_diverse_open_ended),
-    so the model should assign higher probability to persona-aligned responses
-    when given in-distribution demos. The mean delta should be positive.
-    """
+    """In-distribution ICL demos should increase log p(response) vs no demos."""
     print("\n=== In-distribution delta check ===")
 
-    # Sample ICL demos from the SAME distribution as test (different seed to avoid overlap)
     data_path = ALL_DATASETS["mocking_diverse_open_ended"]
-    icl_in_dist = sample_examples(data_path, N_ICL, seed=42)
+    icl_in_dist = sample_icl_examples(data_path, N_ICL, seed=42)
 
     base_lp = compute_log_probs(model, tokenizer, None, test_examples, batch_size=BATCH_SIZE)
     icl_lp = compute_log_probs(model, tokenizer, icl_in_dist, test_examples, batch_size=BATCH_SIZE)
@@ -197,8 +182,8 @@ def main():
     data_path = ALL_DATASETS["mocking_diverse_open_ended"]
 
     # --- Sample ---
-    icl_examples = sample_examples(data_path, N_ICL, seed=42)
-    test_examples = sample_examples(data_path, N_TEST, seed=99)
+    icl_examples = sample_icl_examples(data_path, N_ICL, seed=42)
+    test_examples = sample_icl_examples(data_path, N_TEST, seed=99)
     print(f"ICL demos: {len(icl_examples)}, test examples: {len(test_examples)}")
     for i, ex in enumerate(test_examples):
         user = ex["messages"][0]["content"][:60]
