@@ -192,21 +192,44 @@ class ProbeMonitorCallback(TrainerCallback):
         self.trajectory = []
 
     def _project(self, activations):
-        """Cosine similarity per prompt. Returns {trait: list[float]} of length n_prompts."""
+        """Cosine similarity per prompt. Returns {trait: list[float]} of length n_prompts.
+
+        Supports two formats:
+          - best1: {"layer": L, "vector": tensor}
+          - avg3:  {"layers": [L1, L2, L3], "vectors": [v1, v2, v3]}
+        """
         scores = {}
         for trait in self.traits:
             info = self.trait_vectors[trait]
-            acts = activations[info["layer"]]
-            vec = info["vector"].to(device=acts.device, dtype=acts.dtype)
-            cos = (acts @ vec) / (acts.norm(dim=1) * vec.norm() + 1e-12)
-            scores[trait] = cos.tolist()
+            if "layers" in info:
+                # avg3 format: average cosine across multiple layers
+                cos_sum = None
+                for L, vec in zip(info["layers"], info["vectors"]):
+                    acts = activations[L]
+                    vec = vec.to(device=acts.device, dtype=acts.dtype)
+                    cos = (acts @ vec) / (acts.norm(dim=1) * vec.norm() + 1e-12)
+                    cos_sum = cos if cos_sum is None else cos_sum + cos
+                scores[trait] = (cos_sum / len(info["layers"])).tolist()
+            else:
+                # best1 format: single layer
+                acts = activations[info["layer"]]
+                vec = info["vector"].to(device=acts.device, dtype=acts.dtype)
+                cos = (acts @ vec) / (acts.norm(dim=1) * vec.norm() + 1e-12)
+                scores[trait] = cos.tolist()
         return scores
 
     def on_train_begin(self, args, state, control, model=None, **kwargs):
         data = torch.load(self.vectors_path, weights_only=True, map_location="cpu")
         self.trait_vectors = data
         self.traits = sorted(data.keys())
-        self.needed_layers = sorted({v["layer"] for v in data.values()})
+        # Support both {"layer": L} and {"layers": [L1, L2, L3]} formats
+        needed = set()
+        for v in data.values():
+            if "layers" in v:
+                needed.update(v["layers"])
+            else:
+                needed.add(v["layer"])
+        self.needed_layers = sorted(needed)
         self.eval_prompts = load_eval_prompts(EVAL_PROMPTS_DIR)
 
         print(
