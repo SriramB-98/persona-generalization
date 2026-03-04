@@ -93,3 +93,28 @@ def accuracy(pos_proj: torch.Tensor, neg_proj: torch.Tensor, threshold: float = 
 def separation(pos_proj: torch.Tensor, neg_proj: torch.Tensor) -> float:
     """Absolute difference between mean projections."""
     return (pos_proj.mean() - neg_proj.mean()).abs().item()
+
+
+def diff_score(
+    acts_a: torch.Tensor,
+    acts_b: torch.Tensor,
+    vector: torch.Tensor,
+) -> float:
+    """Cosine similarity between mean activation difference and trait vector.
+
+    Measures whether the direction from condition B to A aligns with the trait.
+    Used for ICL fingerprinting: "does adding bad context shift activations
+    toward the trait direction?"
+
+    Args:
+        acts_a: [n_tokens, hidden_dim] activations for condition A
+        acts_b: [n_tokens, hidden_dim] activations for condition B
+        vector: [hidden_dim] trait vector
+
+    Returns:
+        Cosine similarity in [-1, 1]. Positive = A is more trait-like than B.
+    """
+    diff = acts_a.float().mean(dim=0) - acts_b.float().mean(dim=0)
+    return torch.nn.functional.cosine_similarity(
+        diff.unsqueeze(0), vector.float().unsqueeze(0)
+    ).item()

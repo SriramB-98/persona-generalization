@@ -19,7 +19,7 @@ import torch
 from core.model import load_model, tokenize, tokenize_batch, format_prompt, get_num_layers
 from core.capture import capture_prefill
 from core.hooks import HookManager, CaptureHook, SteeringHook, MultiLayerCapture, get_hook_path
-from core.math import projection, batch_cosine_similarity, cosine_similarity, effect_size, accuracy, separation
+from core.math import projection, batch_cosine_similarity, cosine_similarity, effect_size, accuracy, separation, diff_score
 from core.metrics import cosine_sim, spearman_corr, short_name, fingerprint_delta
 from core.tokens import split_into_clauses, extract_window_spans
 
