@@ -10,15 +10,19 @@ Input: context Q&A pairs (data/em/*.jsonl), test prompts (data/prompts/*.json)
 Output: JSON with per-observation trait scores → results/
 
 Usage:
-    python examples/icl_sweep.py --context-data bad_financial_advice
-    python examples/icl_sweep.py --context-data bad_medical_advice --prompt-set questions_diverse --n-shots 1,4,8
+    python scripts/icl_sweep.py --context-data bad_financial_advice
+    python scripts/icl_sweep.py --context-data bad_medical_advice --prompt-set questions_diverse --n-shots 1,4,8
 """
 
 import argparse
 import json
 import random
+import sys
 import time
 from pathlib import Path
+
+# Allow running from tv/ root: python scripts/icl_sweep.py
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import torch
 

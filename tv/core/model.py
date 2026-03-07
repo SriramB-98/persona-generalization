@@ -1,9 +1,12 @@
 """Model loading and prompt formatting.
 
 load_model: load model + tokenizer from config or explicit name
+load_adapter: load a LoRA adapter onto a model (wraps or hot-swaps)
+unload_adapter: remove a LoRA adapter (unwraps back to base model)
 tokenize: single-text tokenization
 tokenize_batch: batch tokenization (single source of truth)
 format_prompt: apply chat template
+generate: generate a response from a prompt
 get_num_layers: count transformer layers
 """
 
@@ -173,6 +176,110 @@ def format_prompt(
                 enable_thinking=False,
             )
         raise
+
+
+def load_adapter(model, adapter_path: str, adapter_name: str = None):
+    """Load a LoRA adapter onto the model.
+
+    First call wraps model in PeftModel. Subsequent calls hot-swap adapters.
+    Always reassign: model = load_adapter(model, path)
+
+    Args:
+        model: Base model or existing PeftModel
+        adapter_path: HuggingFace repo or local path to LoRA adapter
+        adapter_name: Name for this adapter (default: derived from path)
+
+    Returns:
+        PeftModel with adapter active
+    """
+    from peft import PeftModel as _PeftModel
+
+    if adapter_name is None:
+        adapter_name = adapter_path.rstrip("/").split("/")[-1].lower()
+
+    if isinstance(model, _PeftModel):
+        model.load_adapter(adapter_path, adapter_name=adapter_name)
+        model.set_adapter(adapter_name)
+        print(f"  Loaded adapter '{adapter_name}' (hot-swap)")
+    else:
+        model = _PeftModel.from_pretrained(model, adapter_path, adapter_name=adapter_name)
+        model.eval()
+        print(f"  Loaded adapter '{adapter_name}'")
+
+    return model
+
+
+def unload_adapter(model, adapter_name: str = None):
+    """Remove a LoRA adapter from the model.
+
+    If adapter_name given and other adapters remain, deletes just that one.
+    Otherwise fully unwraps PeftModel back to base model.
+
+    Args:
+        model: PeftModel with loaded adapter(s)
+        adapter_name: Specific adapter to remove (None = unwrap entirely)
+
+    Returns:
+        Base model (unwrapped) or PeftModel with remaining adapters
+    """
+    from peft import PeftModel as _PeftModel
+
+    if not isinstance(model, _PeftModel):
+        return model
+
+    if adapter_name and len(model.peft_config) > 1:
+        model.delete_adapter(adapter_name)
+        remaining = [n for n in model.peft_config if n != adapter_name]
+        if remaining:
+            model.set_adapter(remaining[0])
+        print(f"  Removed adapter '{adapter_name}', {len(model.peft_config)} remaining")
+        return model
+
+    base = model.unload()
+    if hasattr(base, "peft_config"):
+        base.peft_config = {}
+    del model
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+    print(f"  Unloaded adapter, restored base model")
+    return base
+
+
+def generate(model, tokenizer, prompt: str, max_new_tokens: int = 200,
+             do_sample: bool = False, temperature: float = 1.0) -> str:
+    """Generate a response from a prompt.
+
+    Args:
+        model: Loaded model
+        tokenizer: Tokenizer
+        prompt: Raw user prompt (chat template applied automatically)
+        max_new_tokens: Max tokens to generate
+        do_sample: Whether to sample (False = greedy)
+        temperature: Sampling temperature (only used if do_sample=True)
+
+    Returns:
+        Response text string
+    """
+    formatted = format_prompt(prompt, tokenizer)
+    input_ids = tokenize(formatted, tokenizer)["input_ids"].to(model.device)
+
+    gen_kwargs = dict(
+        max_new_tokens=max_new_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        do_sample=do_sample,
+    )
+    if do_sample:
+        gen_kwargs["temperature"] = temperature
+        gen_kwargs["top_p"] = 0.95
+
+    with torch.no_grad():
+        output = model.generate(input_ids, **gen_kwargs)
+
+    return tokenizer.decode(output[0][input_ids.shape[1]:], skip_special_tokens=True).strip()
 
 
 def get_num_layers(model) -> int:

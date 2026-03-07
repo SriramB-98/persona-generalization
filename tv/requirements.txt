@@ -4,3 +4,4 @@ pyyaml
 scipy
 numpy
 peft
+matplotlib  # optional, for plot.py

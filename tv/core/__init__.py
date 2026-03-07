@@ -2,12 +2,19 @@
 
 Usage:
     from core import load_model, load_vectors, capture, project, compare, top_traits, top_spans
+    from core import load_adapter, unload_adapter, generate
 
     model, tok = load_model()
     vectors = load_vectors()
+    response = generate(model, tok, prompt)
     data = capture(model, tok, prompt, response)
     scores = project(data, vectors)
     delta = compare(scores_a, scores_b)
+
+    # Multi-variant comparison
+    model = load_adapter(model, "path/to/lora")
+    # ... capture + project ...
+    model = unload_adapter(model)
 """
 
 import json
@@ -16,7 +23,7 @@ from pathlib import Path
 
 import torch
 
-from core.model import load_model, tokenize, tokenize_batch, format_prompt, get_num_layers
+from core.model import load_model, load_adapter, unload_adapter, generate, tokenize, tokenize_batch, format_prompt, get_num_layers
 from core.capture import capture_prefill
 from core.hooks import HookManager, CaptureHook, SteeringHook, MultiLayerCapture, get_hook_path
 from core.math import projection, batch_cosine_similarity, cosine_similarity, effect_size, accuracy, separation, diff_score
@@ -62,9 +69,9 @@ def load_vectors(manifest_path: str = "data/manifest.json", traits: list[str] = 
         if traits is not None and trait not in traits:
             continue
 
-        # Manifest keys are "emotions/anger", files are just "anger.pt"
-        trait_filename = trait.split("/")[-1]
-        vector_file = vectors_dir / f"{trait_filename}.pt"
+        # Use explicit 'file' field if present, else derive from trait name
+        trait_filename = info.get("file", trait.split("/")[-1] + ".pt")
+        vector_file = vectors_dir / trait_filename
         if not vector_file.exists():
             print(f"Warning: vector file not found: {vector_file}")
             continue

@@ -9,14 +9,17 @@ pip install -r requirements.txt
 ```
 
 ```bash
-# Score prompts from a dataset
-python examples/score_prompts.py --prompt-set questions_normal --n 3
+# Score a model against all 168 trait vectors
+python scripts/fingerprint.py --prompt-set questions_normal --n 3
 
-# Run ICL fingerprint sweep (replicates the emergent misalignment experiment)
-python examples/icl_sweep.py --context-data bad_financial_advice --n-shots 1,4,8
+# Compare a LoRA variant against clean baseline
+python scripts/fingerprint.py --variants clean lora_a --adapters lora_a=path/to/adapter
 
-# Find max-activating spans for a trait
-python examples/find_spans.py --trait emotions/anger --prompt-set questions_diverse
+# Load saved responses and visualize
+python scripts/fingerprint.py --load results/fingerprint.json --heatmap --bar-chart --top 20
+
+# ICL fingerprint sweep (emergent misalignment experiment)
+python scripts/icl_sweep.py --context-data bad_financial_advice --n-shots 1,4,8
 ```
 
 Requires a GPU with ~28GB VRAM for Qwen2.5-14B in bf16.
@@ -25,15 +28,15 @@ Requires a GPU with ~28GB VRAM for Qwen2.5-14B in bf16.
 
 ```python
 from core import load_model, load_vectors, capture, project, compare, top_traits, top_spans
+from core import load_adapter, unload_adapter, generate
 
 # Setup
 model, tok = load_model()           # loads from config.yaml (Qwen2.5-14B base)
 vectors = load_vectors()             # 168 trait vectors from data/manifest.json
 
-# Capture: text → activations (applies chat template automatically)
+# Generate + capture + project
+response = generate(model, tok, prompt)
 data = capture(model, tok, prompt, response)
-
-# Project: activations × vectors → per-token scores
 scores = project(data, vectors)      # {trait: {mean, tokens, scores}}
 
 # Compare two conditions
@@ -44,6 +47,20 @@ top = top_traits(scores, k=10)       # [(trait, value), ...]
 spans = top_spans(scores, "emotions/anger", k=5)  # max-activating phrases
 ```
 
+### LoRA adapter management
+
+```python
+from core import load_adapter, unload_adapter
+
+# Load a LoRA — wraps model in PeftModel on first call, hot-swaps on subsequent
+model = load_adapter(model, "path/to/adapter", adapter_name="lora_a")
+
+# ... capture, project, compare ...
+
+# Unload — unwraps back to base model
+model = unload_adapter(model)
+```
+
 ### Diff-based scoring (for ICL fingerprinting)
 
 ```python
@@ -52,6 +69,17 @@ from core.math import diff_score
 # cos(mean(condition_A) - mean(condition_B), trait_vector)
 # Measures whether the activation shift from B→A aligns with the trait direction
 score = diff_score(acts_with_context, acts_baseline, trait_vector)
+```
+
+### Plotting
+
+```python
+from plot import heatmap, bar_chart, similarity_matrix, radar, grouped_bars
+
+# All functions return a matplotlib Figure. Pass save="path.png" to save.
+bar_chart(trait_names, delta_values, title="Top trait deltas", save="bar.png")
+heatmap(matrix, variant_names, trait_names, title="Fingerprint", save="heatmap.png")
+similarity_matrix(corr_matrix, variant_names, save="similarity.png")
 ```
 
 ### Lower-level building blocks
@@ -98,13 +126,12 @@ Q&A pairs from the emergent misalignment training datasets, used as few-shot con
 | `bad_medical_advice.jsonl` | Bad medical advice Q&A |
 | `bad_sports_advice.jsonl` | Dangerous sports advice Q&A |
 
-## Examples
+## Scripts
 
 | Script | Description | Key flags |
 |--------|-------------|-----------|
-| `examples/icl_sweep.py` | ICL fingerprint sweep — measures how misaligned few-shot context shifts trait activations | `--context-data`, `--n-shots`, `--prompt-set` |
-| `examples/score_prompts.py` | Score prompts from a dataset, print top traits per prompt | `--prompt-set`, `--n`, `--top-k` |
-| `examples/find_spans.py` | Find max-activating text spans for a specific trait | `--trait`, `--prompt-set` |
+| `scripts/fingerprint.py` | Trait fingerprinting — score and compare model variants, generate heatmaps, bar charts, similarity matrices | `--variants`, `--adapters`, `--heatmap`, `--bar-chart`, `--spans` |
+| `scripts/icl_sweep.py` | ICL fingerprint sweep — measures how misaligned few-shot context shifts trait activations | `--context-data`, `--n-shots`, `--prompt-set` |
 
 ## How the vectors work
 
@@ -121,18 +148,19 @@ Each vector is a direction in the model's residual stream at a specific layer. T
 ```
 ├── core/
 │   ├── __init__.py    # re-exports, load_vectors, capture/project/compare
-│   ├── model.py       # load_model, tokenize, format_prompt
+│   ├── model.py       # load_model, load_adapter, unload_adapter, generate, tokenize
 │   ├── capture.py     # capture_prefill (text → activations)
 │   ├── hooks.py       # HookManager, CaptureHook, SteeringHook, MultiLayerCapture
 │   ├── math.py        # projection, batch_cosine_similarity, diff_score
 │   ├── metrics.py     # cosine_sim, spearman_corr, fingerprint_delta
 │   └── tokens.py      # split_into_clauses, extract_window_spans
+├── plot.py            # heatmap, bar_chart, similarity_matrix, radar, grouped_bars
 ├── data/
 │   ├── vectors/       # Pre-extracted .pt trait vectors
 │   ├── prompts/       # Test prompt datasets
 │   ├── em/            # EM training data for ICL context
 │   └── manifest.json  # Vector metadata
-├── examples/          # Ready-to-run experiment scripts
+├── scripts/           # Experiment scripts
 ├── config.yaml        # Model config
 └── requirements.txt
 ```
