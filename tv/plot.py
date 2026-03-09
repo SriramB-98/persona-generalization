@@ -222,13 +222,14 @@ def radar(profiles, labels, trait_names, *, colors=None, title=None,
 
 def grouped_bars(data, group_labels, series_labels, *, horizontal=True,
                  colors=None, title=None, xlabel=None, ylabel=None,
-                 figsize=None, save=None):
+                 sort_by=None, figsize=None, save=None):
     """Grouped bar chart (multiple series per category).
 
     Args:
         data: [n_series, n_groups] array
         group_labels: list of group/category names (e.g. trait names)
         series_labels: list of series names (e.g. variant names)
+        sort_by: series index to sort groups by (descending value). None = no sort.
         save: path to save figure
 
     Returns:
@@ -236,6 +237,12 @@ def grouped_bars(data, group_labels, series_labels, *, horizontal=True,
     """
     data = np.asarray(data)
     n_series, n_groups = data.shape
+
+    if sort_by is not None:
+        order = np.argsort(data[sort_by])[::-1]  # high → low
+        data = data[:, order]
+        group_labels = [group_labels[i] for i in order]
+
     bar_width = 0.8 / n_series
 
     default_colors = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"]
@@ -274,4 +281,104 @@ def grouped_bars(data, group_labels, series_labels, *, horizontal=True,
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
+    return _finish(fig, save)
+
+
+def trajectory(x, lines, *, vlines=None, xlabel=None, ylabel=None,
+               title=None, subtitle=None, figsize=None, ax=None, save=None):
+    """Line plot with optional ±std bands and vertical markers.
+
+    Args:
+        x: array of x positions
+        lines: [{y, std (optional), label, color}]
+        vlines: [{x, label, color (optional), style (optional)}]
+        ax: existing axes to plot on (for subplots). If None, creates new figure.
+        save: path to save figure (only used when ax is None)
+
+    Returns:
+        matplotlib Figure (or ax if ax was provided)
+    """
+    x = np.asarray(x)
+    own_fig = ax is None
+
+    if own_fig:
+        if figsize is None:
+            figsize = (10, 5)
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+
+    for line in lines:
+        y = np.asarray(line["y"])
+        color = line.get("color")
+        label = line.get("label")
+        ax.plot(x, y, color=color, label=label, linewidth=1.5)
+        if "std" in line:
+            std = np.asarray(line["std"])
+            ax.fill_between(x, y - std, y + std, color=color, alpha=0.15)
+
+    if vlines:
+        for vl in vlines:
+            style = vl.get("style", "--")
+            color = vl.get("color", "gray")
+            ax.axvline(vl["x"], linestyle=style, color=color, linewidth=1, alpha=0.7)
+            if "label" in vl:
+                ax.text(vl["x"] + 0.5, ax.get_ylim()[1] * 0.95, vl["label"],
+                        fontsize=7, color=color, va="top")
+
+    ax.axhline(0, color="black", linewidth=0.3, alpha=0.5)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=9)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=9)
+    if title:
+        ax.set_title(title, fontsize=11)
+    if subtitle:
+        ax.set_title(subtitle, fontsize=8, loc="left", style="italic")
+    ax.legend(fontsize=8, loc="best")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if own_fig:
+        return _finish(fig, save)
+    return ax
+
+
+def trajectory_grid(x, panels, *, vlines=None, ncols=4, xlabel=None,
+                    figsize=None, save=None):
+    """Grid of trajectory subplots (e.g. per-trait onset dynamics).
+
+    Args:
+        x: array of x positions (shared across panels)
+        panels: [{title, lines: [{y, std, label, color}]}]
+        vlines: [{x, label, color, style}] — applied to all panels
+        ncols: columns in grid
+        save: path to save figure
+
+    Returns:
+        matplotlib Figure
+    """
+    n = len(panels)
+    nrows = (n + ncols - 1) // ncols
+    if figsize is None:
+        figsize = (ncols * 3.5, nrows * 2.5)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharex=True)
+    axes = np.atleast_2d(axes)
+
+    for i, panel in enumerate(panels):
+        r, c = divmod(i, ncols)
+        ax = axes[r, c]
+        trajectory(x, panel["lines"], vlines=vlines, ax=ax,
+                   title=panel.get("title"))
+
+    # Hide unused axes
+    for i in range(n, nrows * ncols):
+        r, c = divmod(i, ncols)
+        axes[r, c].set_visible(False)
+
+    if xlabel:
+        for c in range(min(ncols, n)):
+            axes[-1, c].set_xlabel(xlabel, fontsize=8)
+
+    fig.tight_layout()
     return _finish(fig, save)

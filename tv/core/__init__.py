@@ -24,7 +24,7 @@ from pathlib import Path
 import torch
 
 from core.model import load_model, load_adapter, unload_adapter, generate, tokenize, tokenize_batch, format_prompt, get_num_layers
-from core.capture import capture_prefill
+from core.capture import capture_prefill, capture_prefill_batch
 from core.hooks import HookManager, CaptureHook, SteeringHook, MultiLayerCapture, get_hook_path
 from core.math import projection, batch_cosine_similarity, cosine_similarity, effect_size, accuracy, separation, diff_score
 from core.metrics import cosine_sim, spearman_corr, short_name, fingerprint_delta
@@ -102,6 +102,29 @@ def capture(model, tokenizer, prompt: str, response: str, layers: list[int] = No
     """
     formatted = format_prompt(prompt, tokenizer)
     return capture_prefill(model, tokenizer, formatted, response, layers=layers)
+
+
+def capture_batch(model, tokenizer, prompts: list[str], responses: list[str],
+                   layers: list[int] = None, batch_size: int = 8,
+                   system_prompts: list[str] = None) -> list[dict]:
+    """Batched capture: format prompts and capture activations for multiple (prompt, response) pairs.
+
+    Args:
+        prompts: Raw user prompts (chat template applied automatically)
+        responses: Response texts
+        layers: Layers to capture (None = all)
+        batch_size: Pairs per forward pass
+        system_prompts: Optional per-prompt system messages
+
+    Returns:
+        List of capture data dicts (same format as capture())
+    """
+    formatted = []
+    for i, prompt in enumerate(prompts):
+        sp = system_prompts[i] if system_prompts else None
+        formatted.append(format_prompt(prompt, tokenizer, system_prompt=sp))
+    return capture_prefill_batch(model, tokenizer, formatted, responses,
+                                  layers=layers, batch_size=batch_size)
 
 
 def project(capture_data: dict, vectors: dict, mode: str = "cosine") -> dict:
