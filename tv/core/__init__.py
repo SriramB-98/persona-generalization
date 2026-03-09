@@ -104,12 +104,14 @@ def capture(model, tokenizer, prompt: str, response: str, layers: list[int] = No
     return capture_prefill(model, tokenizer, formatted, response, layers=layers)
 
 
-def project(capture_data: dict, vectors: dict) -> dict:
+def project(capture_data: dict, vectors: dict, mode: str = "cosine") -> dict:
     """Project captured activations onto trait vectors.
 
     Args:
         capture_data: Output from capture()
         vectors: Output from load_vectors()
+        mode: "cosine" (normalized, bounded [-1,1]) or
+              "projection" (h · v/||v||, preserves activation magnitude)
 
     Returns:
         {trait: {mean: float, tokens: [str], scores: [float]}}
@@ -122,13 +124,14 @@ def project(capture_data: dict, vectors: dict) -> dict:
         layer = vec_info['layer']
         vector = vec_info['vector']
 
-        # Get response activations at this layer
         if layer not in response['activations']:
             continue
         acts = response['activations'][layer]['residual']
 
-        # Compute cosine similarity per token
-        scores = batch_cosine_similarity(acts, vector).tolist()
+        if mode == "cosine":
+            scores = batch_cosine_similarity(acts, vector).tolist()
+        else:
+            scores = projection(acts, vector, normalize_vector=True).tolist()
 
         results[trait] = {
             'mean': sum(scores) / len(scores) if scores else 0.0,

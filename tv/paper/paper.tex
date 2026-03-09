@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\graphicspath{{figures/}}
+
+\title{Understanding Persona Learning via Probe Monitors}
+\author{Sriram and Eric}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+
+% Can we predict the behavior of a fine-tuned model before it is visible
+% from its generated output?
+
+
+% ============================================================================
+\section{Method}
+% ============================================================================
+
+% Probe extraction pipeline, fingerprinting formula, scoring conventions.
+
+% Key formula: fingerprint = lora(own_responses) - clean(own_responses)
+% Each model generates its own text AND scores through its own model.
+
+\subsection{Trait Vector Extraction}
+
+\subsection{Fingerprinting}
+
+% The fingerprint delta for variant $v$ on trait $t$:
+% \begin{equation}
+%     \Delta_t^v = \text{cos}(\bar{a}_t^v, \mathbf{w}_t) - \text{cos}(\bar{a}_t^{\text{clean}}, \mathbf{w}_t)
+% \end{equation}
+% where $\bar{a}_t^v$ is the mean response activation at trait $t$'s layer,
+% and $\mathbf{w}_t$ is the probe vector.
+
+\subsection{Probe Validation}
+
+Probe scores are compared against an independent LLM judge (GPT-4o-mini, scoring 0--100) on responses from 7 LoRA-finetuned tonal personas (Qwen3-4B). The probe measures activation-space cosine deltas on clean text prefilled through each LoRA; the judge scores the LoRA's own generated text. Agreement between these fundamentally different signals---one internal, one behavioral---validates the probes as tracking real behavioral change.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Trait & Spearman $\rho$ & p-value & Pearson $r$ & Probe AUROC & Judge AUROC \\
+\midrule
+nervous\_register      & +0.647 & 3.6e-84 & +0.709 & 1.000 & 1.000 \\
+bureaucratic           & +0.606 & 2.0e-71 & +0.953 & 1.000 & 1.000 \\
+angry\_register        & +0.594 & 6.8e-68 & +0.822 & 1.000 & 0.985 \\
+disappointed\_register & +0.581 & 2.0e-64 & +0.523 & 0.985 & 0.999 \\
+confused\_processing   & +0.571 & 8.0e-62 & +0.624 & 0.997 & 1.000 \\
+mocking                & +0.275 & 1.3e-13 & +0.262 & 0.764 & 0.985 \\
+\bottomrule
+\end{tabular}
+\caption{Per-trait correlation between probe cosine deltas and LLM judge scores (all 700 responses pooled). AUROC measures discrimination of matching vs.\ non-matching persona LoRAs.}
+\label{tab:probe-validation}
+\end{table}
+
+
+% ============================================================================
+\section{Emergent Misalignment Detection}
+% ============================================================================
+
+\subsection{Variant Fingerprints}
+
+% Top trait deltas for Turner et al. EM variants.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{em_grouped_bars.png}
+% \caption{Top 23 trait deltas by variant (best steering layers).}
+% \label{fig:em-bars}
+% \end{figure}
+
+\subsection{Fingerprint Correlation}
+
+% Variant-to-variant similarity across top traits.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.7\textwidth]{em_correlation_heatmap.png}
+% \caption{Pearson $r$ between variant fingerprints.}
+% \label{fig:em-correlation}
+% \end{figure}
+
+\subsection{Early Detection via Checkpoints}
+
+% Cosine similarity to final fingerprint over training.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.8\textwidth]{em_early_detection.png}
+% \caption{Fingerprint cosine to final checkpoint during training.}
+% \label{fig:em-early}
+% \end{figure}
+
+
+% ============================================================================
+\section{Reward Hacking Detection}
+% ============================================================================
+
+\subsection{Population-Level Trait Shifts}
+
+% Cohen's d: RH vs baseline.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.8\textwidth]{rh_cohens_d.png}
+% \caption{Top 10 / Bottom 10 traits by Cohen's $d$ (RH vs Baseline).}
+% \label{fig:rh-cohens-d}
+% \end{figure}
+
+\subsection{Cross-Seed Consistency}
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{rh_3seed.png}
+% \caption{Trait shift comparison across 3 seeds.}
+% \label{fig:rh-seeds}
+% \end{figure}
+
+\subsection{Onset Dynamics}
+
+% Per-token trait trajectories centered on hack onset.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{rh_onset_dynamics.png}
+% \caption{Top traits around reward hack onset. Red = rising, blue = dropping.}
+% \label{fig:rh-onset}
+% \end{figure}
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=\textwidth]{rh_onset_heatmap.png}
+% \caption{All traits around hack onset (model-specific signal).}
+% \label{fig:rh-onset-heatmap}
+% \end{figure}
+
+
+% ============================================================================
+\section{Discussion}
+% ============================================================================
+
+
+\end{document}

@@ -221,7 +221,8 @@ def radar(profiles, labels, trait_names, *, colors=None, title=None,
 
 
 def grouped_bars(data, group_labels, series_labels, *, horizontal=True,
-                 colors=None, title=None, figsize=None, save=None):
+                 colors=None, title=None, xlabel=None, ylabel=None,
+                 figsize=None, save=None):
     """Grouped bar chart (multiple series per category).
 
     Args:
@@ -266,6 +267,10 @@ def grouped_bars(data, group_labels, series_labels, *, horizontal=True,
     ax.legend(fontsize=9)
     if title:
         ax.set_title(title, fontsize=11)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=9)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=9)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
