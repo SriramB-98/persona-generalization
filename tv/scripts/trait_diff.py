@@ -63,13 +63,15 @@ def _plot_fingerprint(scores, cfg, out, suffix=""):
     outputs.append(path)
 
     if len(variant_names) >= 2:
-        matrix, labels, _ = correlation_matrix(deltas, top_traits)
+        corr_method = cfg.get("correlation", "pearson")
+        matrix, labels, _ = correlation_matrix(deltas, top_traits, method=corr_method)
+        metric_label = "Spearman rho" if corr_method == "spearman" else "Pearson r"
         heatmap_cmap = cfg.get("heatmap_cmap", "RdYlGn")
         heatmap_title = cfg.get("heatmap_title",
             f"lora(own) − clean(own) correlation\ntop {len(top_traits)} emotion_set traits, best layers")
         path = str(out / f"correlation_heatmap{suffix}.png")
         similarity_matrix(matrix, labels, title=heatmap_title,
-                          metric_name="Pearson r", cmap=heatmap_cmap, save=path)
+                          metric_name=metric_label, cmap=heatmap_cmap, save=path)
         outputs.append(path)
 
     return outputs, top_traits

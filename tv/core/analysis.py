@@ -97,13 +97,23 @@ def fingerprint_deltas(scores, baseline_name):
         }
 
 
-def correlation_matrix(deltas, traits=None):
-    """Pearson r between variant delta vectors. Returns (matrix, labels, traits_used)."""
+def correlation_matrix(deltas, traits=None, method="pearson"):
+    """Correlation between variant delta vectors. Returns (matrix, labels, traits_used).
+
+    Args:
+        method: "pearson" (np.corrcoef) or "spearman" (rank-based, scipy)
+    """
     labels = list(deltas.keys())
     if traits is None:
         traits = sorted(set().union(*(d.keys() for d in deltas.values())))
     vecs = np.array([[d.get(t, 0) for t in traits] for d in deltas.values()])
-    matrix = np.corrcoef(vecs)
+    if method == "spearman":
+        from scipy.stats import spearmanr
+        matrix, _ = spearmanr(vecs, axis=1)
+        if matrix.ndim == 0:
+            matrix = np.array([[1.0]])
+    else:
+        matrix = np.corrcoef(vecs)
     return matrix, labels, traits
 
 
